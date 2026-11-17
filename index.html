@@ -193,7 +193,7 @@
                 <label class="field-label">ANLIEGEN</label>
                 <input type="text" id="apptConcern" required maxlength="400" placeholder="Worum geht es?">
                 <label class="field-label">DATUM</label>
-                <input type="date" id="apptDateInput" required>
+                <input type="text" id="apptDateInput" class="date-pick" readonly required placeholder="Datum im Kalender wählen" autocomplete="off">
                 <label class="field-label">UHRZEIT</label>
                 <input type="time" id="apptTimeInput" required>
                 <label class="field-label">TELEFONNUMMER</label>
@@ -215,14 +215,18 @@
                 <label class="field-label">PERSONENANZAHL</label>
                 <input type="number" id="resGuests" min="1" max="20" value="2" required>
                 <label class="field-label">DATUM</label>
-                <input type="text" id="resDate" value="Heute" required>
+                <input type="text" id="resDate" class="date-pick" readonly required placeholder="Datum im Kalender wählen" autocomplete="off">
                 <label class="field-label">UHRZEIT</label>
-                <input type="text" id="resTime" value="19:00" required>
+                <input type="time" id="resTime" value="19:00" required>
+                <label class="field-label">TELEFONNUMMER</label>
+                <input type="tel" id="resPhone" required maxlength="40" placeholder="+49 176 ...">
                 <label class="field-label">BEREICH</label>
                 <select id="resType">
                     <option value="Hauptraum">Hauptraum</option>
                     <option value="Sushi Bar">Sushi Bar</option>
                 </select>
+                <label class="field-label">ANMERKUNGEN (OPTIONAL)</label>
+                <textarea id="resNotes" rows="2" maxlength="500" placeholder="Allergien, Anlass, Wünsche …"></textarea>
                 <div class="form-row" style="margin-top:20px;">
                     <button type="button" class="btn-nav-outline full-width" onclick="closeReservationModal()">Abbrechen</button>
                     <button type="submit" class="btn-red full-width">Anfragen</button>

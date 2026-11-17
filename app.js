@@ -356,22 +356,17 @@ async function submitReservation(event) {
         10
     );
 
-    const dateRaw = document.getElementById('resDate').value.trim();
-    let date = dateRaw;
-
-    // Deutsches Datum DD.MM.YYYY in YYYY-MM-DD umwandeln
-    if (/^\d{2}\.\d{2}\.\d{4}$/.test(dateRaw)) {
-        const [day, month, year] = dateRaw.split('.');
-        date = `${year}-${month}-${day}`;
-    }
-
+    const date = document.getElementById('resDate').dataset.iso || '';
     const time = document.getElementById('resTime').value.trim();
     const type = document.getElementById('resType').value;
+    const phone = document.getElementById('resPhone').value.trim();
+    const notes = document.getElementById('resNotes').value.trim();
 
     if (
         !name ||
         !date ||
         !time ||
+        !phone ||
         !Number.isInteger(guests) ||
         guests < 1
     ) {
@@ -389,7 +384,9 @@ async function submitReservation(event) {
                 guests,
                 date,
                 time,
-                type
+                type,
+                phone,
+                notes
             })
         });
 
@@ -405,6 +402,9 @@ async function submitReservation(event) {
         showToast('📅 Reservierung erfolgreich gesendet!');
 
         document.getElementById('resName').value = '';
+        document.getElementById('resPhone').value = '';
+        document.getElementById('resNotes').value = '';
+        if (window.resetDatePick) window.resetDatePick('resDate');
 
     } catch (error) {
         console.error('Reservierungsfehler:', error);
@@ -698,9 +698,6 @@ function openAppointmentModal(event) {
     const nameEl = document.getElementById('apptName');
     if (nameEl && !nameEl.value && currentCustomer) nameEl.value = currentCustomer.username;
 
-    const dateEl = document.getElementById('apptDateInput');
-    if (dateEl) dateEl.min = new Date().toISOString().slice(0, 10);
-
     document.getElementById('appointmentModal').classList.add('open');
 }
 
@@ -714,7 +711,7 @@ async function submitAppointment(event) {
     const body = {
         name: document.getElementById('apptName').value.trim(),
         concern: document.getElementById('apptConcern').value.trim(),
-        date: document.getElementById('apptDateInput').value,
+        date: document.getElementById('apptDateInput').dataset.iso || '',
         time: document.getElementById('apptTimeInput').value,
         phone: document.getElementById('apptPhone').value.trim()
     };
@@ -741,6 +738,7 @@ async function submitAppointment(event) {
 
         closeAppointmentModal();
         event.target.reset();
+        if (window.resetDatePick) window.resetDatePick('apptDateInput');
 
         showToast('📅 Termin angefragt – Status siehst du in deinem Kundenkonto.');
     } catch (err) {
@@ -776,11 +774,17 @@ async function loadMyAppointments() {
                         <strong style="color:${colors[a.status] || '#aaa'}; white-space:nowrap;">${escHtml(a.status)}</strong>
                     </div>
                     <div style="color:#aaa; margin-top:4px;">${a.status === 'Verschoben'
-                        ? `Verschoben auf <strong style="color:#f0b866;">📅 ${escHtml(a.date)} · 🕒 ${escHtml(a.time)}</strong><br>vorher: ${escHtml(a.origDate)} ${escHtml(a.origTime)}`
-                        : `📅 ${escHtml(a.date)} · 🕒 ${escHtml(a.time)}`}</div>
+                        ? `Verschoben auf <strong style="color:#f0b866;">📅 ${escHtml(fmtDate(a.date))} · 🕒 ${escHtml(a.time)}</strong><br>vorher: ${escHtml(fmtDate(a.origDate))} ${escHtml(a.origTime)}`
+                        : `📅 ${escHtml(fmtDate(a.date))} · 🕒 ${escHtml(a.time)}`}</div>
                 </div>
             `).join('');
     } catch (err) {
         box.innerHTML = `<p style="color:#c82333; font-size:13px;">${escHtml(err.message)}</p>`;
     }
+}
+
+// 2026-11-17 -> 17.11.2026
+function fmtDate(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+    return m ? m[3] + '.' + m[2] + '.' + m[1] : String(iso || '');
 }

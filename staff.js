@@ -65,7 +65,7 @@ async function fetchState() {
                 const latestRes = newState.reservations[0];
 
                 showCenterAlert(
-                    `Name: ${latestRes.name}\nPersonen: ${latestRes.guests} Gäste\nWann: ${latestRes.date} um ${latestRes.time} Uhr\nBereich: ${latestRes.type}`
+                    `Name: ${latestRes.name}\nPersonen: ${latestRes.guests} Gäste\nWann: ${fmtDate(latestRes.date)} um ${latestRes.time} Uhr\nBereich: ${latestRes.type}\nTelefon: ${latestRes.phone || 'Nicht angegeben'}\nAnmerkungen: ${latestRes.notes || 'Keine'}`
                 );
             }
         }
@@ -704,7 +704,11 @@ function renderAllViews() {
                     <div>
                         <strong>${r.name} (${r.guests} Personen)</strong>
                         <div style="font-size:12px; color:#aaa; margin-top:2px;">
-                            Wann: ${r.date} · ${r.time} Uhr · Bereich: ${r.type}
+                            Wann: ${escHtml(fmtDate(r.date))} · ${escHtml(r.time)} Uhr · Bereich: ${escHtml(r.type)}
+                        </div>
+                        <div style="font-size:12px; color:#aaa; margin-top:2px;">
+                            📞 ${r.phone ? `<code>${escHtml(r.phone)}</code>` : 'Nicht angegeben'}
+                            · Anmerkungen: ${r.notes ? escHtml(r.notes) : 'Keine'}
                         </div>
                     </div>
 
@@ -890,8 +894,8 @@ function renderAppointments() {
                         <span style="color:#888; font-size:12px;">(Konto: ${escHtml(a.customerUsername)})</span>
                         <div style="font-size:13px; color:#ccc; margin-top:4px;">${escHtml(a.concern)}</div>
                         <div style="font-size:12px; color:#aaa; margin-top:4px;">
-                            📅 ${escHtml(a.date)} · 🕒 ${escHtml(a.time)} · 📞 <code>${escHtml(a.phone)}</code>
-                            ${a.origDate ? `<br>Ursprünglich: ${escHtml(a.origDate)} ${escHtml(a.origTime)}` : ''}
+                            📅 ${escHtml(fmtDate(a.date))} · 🕒 ${escHtml(a.time)} · 📞 <code>${escHtml(a.phone)}</code>
+                            ${a.origDate ? `<br>Ursprünglich: ${escHtml(fmtDate(a.origDate))} ${escHtml(a.origTime)}` : ''}
                         </div>
                     </div>
                     <strong style="color:${colors[a.status] || '#aaa'};">${escHtml(a.status)}</strong>
@@ -1526,4 +1530,10 @@ function closeCenterNotification() {
     if (modal) {
         modal.classList.remove('open');
     }
+}
+
+// 2026-11-17 -> 17.11.2026
+function fmtDate(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+    return m ? m[3] + '.' + m[2] + '.' + m[1] : String(iso || '');
 }

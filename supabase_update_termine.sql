@@ -17,6 +17,22 @@ begin
   return d;
 end $$;
 
+-- Reservierung mit Telefonnummer und Anmerkungen
+create or replace function public.api_place_reservation(p jsonb) returns jsonb
+language plpgsql security definer set search_path = private, public as $$
+declare d jsonb; r jsonb;
+begin
+  d := private.load();
+  r := jsonb_build_object('id', private.now_id()::text, 'name', left(coalesce(p->>'name', ''), 60),
+        'guests', coalesce((p->>'guests')::int, 1), 'date', left(coalesce(p->>'date', ''), 40),
+        'time', left(coalesce(p->>'time', ''), 20), 'type', left(coalesce(p->>'type', ''), 40),
+        'phone', left(coalesce(p->>'phone', ''), 40), 'notes', left(coalesce(p->>'notes', ''), 500),
+        'status', 'Bestätigt');
+  d := jsonb_set(d, '{reservations}', jsonb_build_array(r) || (d->'reservations'));
+  perform private.save(d);
+  return r;
+end $$;
+
 -- Termin anfragen (nur eingeloggte Kunden)
 create or replace function public.api_appointment_create(p_username text, p_password text, p jsonb) returns jsonb
 language plpgsql security definer set search_path = private, public as $$
@@ -303,7 +319,7 @@ do $$
 declare f text;
 begin
   foreach f in array array[
-    'api_appointment_create(text,text,jsonb)', 'api_my_appointments(text,text)',
+    'api_appointment_create(text,text,jsonb)', 'api_place_reservation(jsonb)', 'api_my_appointments(text,text)',
     'api_staff_state(text)', 'api_staff_do(text,text,jsonb)'] loop
     execute format('revoke all on function public.%s from public', f);
     execute format('grant execute on function public.%s to anon, authenticated', f);
