@@ -226,25 +226,56 @@ function closeReservationModal() {
     if (modal) modal.classList.remove('open');
 }
 
+
 async function submitReservation(event) {
     event.preventDefault();
-    if (currentCustomer && currentCustomer.hasHausverbot) return showToast('❌ Hausverbot');
+
+    if (currentCustomer && currentCustomer.hasHausverbot) {
+        return showToast('❌ Hausverbot');
+    }
+
     const name = document.getElementById('resName').value.trim();
-    const guests = parseInt(document.getElementById('resGuests').value);
-    const date = document.getElementById('resDate').value.trim();
-    const time = document.getElementById('resTime').value.trim();
+    const guests = parseInt(document.getElementById('resGuests').value, 10);
+    const date = document.getElementById('resDate').value;
+    const time = document.getElementById('resTime').value;
     const type = document.getElementById('resType').value;
 
-    await fetch('/api/reservations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, guests, date, time, type })
-    });
+    if (!name || !date || !time || !Number.isInteger(guests) || guests < 1) {
+        return showToast('❌ Bitte überprüfe deine Reservierungsdaten.');
+    }
 
-    closeReservationModal();
-    showToast('📅 Reservierungsanfrage erfolgreich gesendet!');
-    document.getElementById('resName').value = '';
+    try {
+        const response = await fetch('/api/reservations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name,
+                guests,
+                date,
+                time,
+                type
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || result.error) {
+            throw new Error(result.error || 'Reservierung fehlgeschlagen');
+        }
+
+        closeReservationModal();
+        showToast('📅 Reservierung erfolgreich gesendet!');
+
+        document.getElementById('resName').value = '';
+
+    } catch (error) {
+        console.error('Reservierungsfehler:', error);
+        showToast('❌ Reservierungsfehler: ' + error.message);
+    }
 }
+
 
 // VIP Antrag Funktionen mit Diagnose-Log
 function openVipApplyModal(tier) {
