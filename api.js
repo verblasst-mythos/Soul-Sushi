@@ -87,6 +87,8 @@
   route('DELETE', '/api/reservations/:id', async (b, [id]) => staff('reservation_delete', () => ({ id }))());
   route('POST', '/api/vip/applications/:id/action', async (b, [id]) => staff('vip_action', () => ({ id, action: b.action }))());
   route('PUT', '/api/admin/customer/:id', async (b, [id]) => staff('customer_update', () => Object.assign({}, b, { id }))());
+  route('DELETE', '/api/admin/customer/:id', async (b, [id]) => staff('customer_delete', () => ({ id }))());
+  route('DELETE', '/api/vip/applications/:id', async (b, [id]) => staff('vip_delete', () => ({ id }))());
 
   window.fetch = function (input, init) {
     const url = typeof input === 'string' ? input : input.url;

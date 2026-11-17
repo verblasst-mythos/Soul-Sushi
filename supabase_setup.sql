@@ -370,6 +370,20 @@ begin
       end if;
       res := private.customer_view(d->'customers');
 
+    when 'customer_delete' then
+      if private.arr_get(d->'customers', p->>'id') is null then
+        return jsonb_build_object('error', 'Kundenkonto nicht gefunden', 'status', 404);
+      end if;
+      d := jsonb_set(d, '{customers}', private.arr_del(d->'customers', p->>'id'));
+      res := private.customer_view(d->'customers');
+
+    when 'vip_delete' then
+      if private.arr_get(d->'vipApplications', p->>'id') is null then
+        return jsonb_build_object('error', 'VIP-Antrag nicht gefunden', 'status', 404);
+      end if;
+      d := jsonb_set(d, '{vipApplications}', private.arr_del(d->'vipApplications', p->>'id'));
+      res := d->'vipApplications';
+
     when 'vip_action' then
       e := private.arr_get(d->'vipApplications', p->>'id');
       if e is not null then

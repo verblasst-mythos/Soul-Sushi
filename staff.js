@@ -317,6 +317,7 @@ function renderAllViews() {
                             <label style="font-size:12px; display:flex; align-items:center; gap:5px; cursor:pointer; color: #c82333; font-weight: bold;">
                                 <input type="checkbox" ${c.hasHausverbot ? 'checked' : ''} onchange="updateCustomerStatus('${c.id}', '${c.vipStatus}', ${c.isStammkunde}, this.checked)"> Hausverbot
                             </label>
+                            <button type="button" class="btn-red" style="padding:6px 10px; font-size:11px;" onclick="deleteCustomer('${c.id}', '${String(c.username).replace(/'/g, "\\'")}')">Konto löschen</button>
                         </div>
                     </div>
                 `).join('');
@@ -337,6 +338,7 @@ function renderAllViews() {
                             <button type="button" class="btn-white" style="padding:6px 10px; font-size:11px; background:#2ecc71; color:#fff;" onclick="handleVipAppAction('${app.id}', 'Akzeptiert')">Akzeptieren</button>
                             <button type="button" class="btn-white" style="padding:6px 10px; font-size:11px; background:#e67e22; color:#fff;" onclick="handleVipAppAction('${app.id}', 'Warteliste')">Warteliste</button>
                             <button type="button" class="btn-red" style="padding:6px 10px; font-size:11px;" onclick="handleVipAppAction('${app.id}', 'Abgelehnt')">Ablehnen</button>
+                            <button type="button" class="btn-red" style="padding:6px 10px; font-size:11px;" onclick="deleteVipApplication('${app.id}', '${String(app.username).replace(/'/g, "\\'")}')">Löschen</button>
                         </div>
                     </div>
                 `).join('');
@@ -458,6 +460,24 @@ function renderAllViews() {
                 </div>
             </div>
         `).join('');
+}
+
+async function deleteCustomer(id, username) {
+    if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
+    if (!confirm(`Kundenkonto „${username}“ endgültig löschen? VIP-Status, Stammkundenstatus und Hausverbot dieses Kontos gehen dabei verloren.`)) return;
+    const res = await fetch(`/api/admin/customer/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!res.ok) { const e = await res.json(); return showToast(e.error || 'Kundenkonto konnte nicht gelöscht werden'); }
+    await fetchState();
+    showToast('🗑️ Kundenkonto gelöscht');
+}
+
+async function deleteVipApplication(id, username) {
+    if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
+    if (!confirm(`VIP-Antrag von „${username}“ endgültig löschen?`)) return;
+    const res = await fetch(`/api/vip/applications/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!res.ok) { const e = await res.json(); return showToast(e.error || 'VIP-Antrag konnte nicht gelöscht werden'); }
+    await fetchState();
+    showToast('🗑️ VIP-Antrag gelöscht');
 }
 
 async function updateCustomerStatus(id, vipStatus, isStammkunde, hasHausverbot) {
