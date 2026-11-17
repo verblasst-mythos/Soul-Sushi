@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setInterval(fetchState, 5000);
 
     const savedUserId = sessionStorage.getItem('soulSushiUserId');
-    if (savedUserId && appState) {
+    if (savedUserId && appState && sessionStorage.getItem('soulStaffToken')) {
         const found = appState.staff.find(s => String(s.id) === savedUserId);
         if (found) {
             currentUser = found;
@@ -96,30 +96,29 @@ function isManagementUser(user) {
 }
 
 async function verifyStaffPin() {
-    if (!appState || !appState.staff) await fetchState();
-    if (!appState || !appState.staff) {
-        appState = Object.assign({ status: {}, roles: [], staff: [], menu: [], orders: [], reservations: [], customers: [], vipApplications: [] }, appState || {});
-        showToast('⚠️ Datenbank (Supabase) nicht erreichbar – Notfall-Login aktiv');
-    }
-    const typedName = document.getElementById('staffNameInput').value.trim().toLowerCase();
+    const typedName = document.getElementById('staffNameInput').value.trim();
     const pin = document.getElementById('staffPinInput').value.trim();
-    let member = appState.staff.find(s => s.name.toLowerCase() === typedName);
-    // Owner-Notfallzugang: funktioniert auch wenn der Eintrag in der Datenbank fehlt
-    if (!member && typedName === 'owner' && pin === '0903') {
-        member = { id: 1794860000001, name: 'Owner', role: 'Geschäftsführung', pin: '0903', avatar: '', onDuty: false, clockIn: '-' };
-        appState.staff.push(member);
-    }
-
-    if (!member) return showToast('❌ Mitarbeiter nicht gefunden');
-    if (String(member.pin) === pin || (member.name.toLowerCase() === 'kai mueller' && pin === '1902')) {
-        currentUser = member;
-        sessionStorage.setItem('soulSushiUserId', member.id);
+    if (!typedName || !pin) return showToast('❌ Name und PIN eingeben');
+    try {
+        const res = await fetch('/api/staff/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: typedName, pin })
+        });
+        const data = await res.json();
+        if (!res.ok) return showToast('❌ ' + (data.error || 'Login fehlgeschlagen'));
+        currentUser = data.member;
+        sessionStorage.setItem('soulSushiUserId', currentUser.id);
         document.getElementById('staffPinInput').value = '';
         document.getElementById('staffNameInput').value = '';
+        await fetchState();
+        const fresh = appState && appState.staff && appState.staff.find(s => String(s.id) === String(currentUser.id));
+        if (fresh) currentUser = fresh;
         enterWorkspace();
-        showToast(`Willkommen, ${member.name}!`);
-    } else {
-        showToast(`❌ Falscher PIN für ${member.name}`);
+        showToast(`Willkommen, ${currentUser.name}!`);
+    } catch (err) {
+        console.error(err);
+        showToast('❌ Datenbank nicht erreichbar');
     }
 }
 
@@ -152,6 +151,7 @@ function enterWorkspace() {
 }
 
 function logoutStaff() {
+    fetch('/api/staff/logout', { method: 'POST' }).catch(() => {});
     currentUser = null;
     sessionStorage.removeItem('soulSushiUserId');
     document.getElementById('staffWorkspace').style.display = 'none';
@@ -349,7 +349,7 @@ function renderAllViews() {
                     <div style="width:100%; display:flex; justify-content:space-between; align-items:center;">
                         <div>
                             <strong>${s.name}</strong> <span style="color:${getRoleColor(s.role)}; font-size:11px; font-weight:700;">[${s.role}]</span>
-                            <div style="font-size:12px; color:#888; margin-top:2px;">PIN: <code>${s.pin}</code></div>
+                            <div style="font-size:12px; color:#888; margin-top:2px;">PIN: <code>••••</code> <span style=\"font-size:11px;\">(verschlüsselt)</span></div>
                         </div>
                         <div style="display:flex; gap:6px;">
                             <button type="button" class="btn-white" style="padding:6px 10px; font-size:11px;" onclick="promptChangePin('${s.id}', '${s.name.replace(/'/g, "\\'")}')">PIN ändern</button>

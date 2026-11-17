@@ -1,156 +1,92 @@
-/* Soul Sushi – Backend im Browser (nur GitHub Pages + Supabase, kein Server).
-   Fängt alle fetch('/api/...')-Aufrufe ab und führt die Logik direkt gegen Supabase aus.
-   Gespeichert wird der gesamte Zustand als JSON in der Tabelle app_state (id = 'main'). */
+/* Soul Sushi – Browser-Backend (nur GitHub Pages + Supabase, kein Server).
+   Fängt alle fetch('/api/...')-Aufrufe ab und leitet sie an die gesicherten
+   Supabase-Funktionen (api_*) weiter. Die Tabellen selbst sind von außen nicht lesbar;
+   Passwörter/PINs liegen nur als Hash in der Datenbank. */
 (function () {
   const CFG = window.SOUL_CONFIG;
   const realFetch = window.fetch.bind(window);
-  const TABLE = CFG.SUPABASE_URL + '/rest/v1/app_state';
-  const H = { apikey: CFG.SUPABASE_KEY, 'Content-Type': 'application/json' };
+  const HEAD = { apikey: CFG.SUPABASE_KEY, 'Content-Type': 'application/json' };
+  const TOKEN_KEY = 'soulStaffToken';
+  const isStaffPage = /staff/i.test(location.pathname);
 
-  const OWNER = { id: 1794860000001, name: 'Owner', role: 'Geschäftsführung', pin: '0903',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80', onDuty: false, clockIn: '-' };
-  const DEFAULTS = () => ({
-    status: { isOpen: true, workload: 'Niedrig', discordWebhook: '' },
-    roles: [{ id: 1, name: 'Geschäftsführung', isManagement: true, color: '#d4af37' }],
-    staff: [OWNER], menu: [], orders: [], reservations: [], customers: [], vipApplications: []
-  });
+  const getToken = () => { try { return sessionStorage.getItem(TOKEN_KEY); } catch (e) { return null; } };
+  const setToken = t => { try { t ? sessionStorage.setItem(TOKEN_KEY, t) : sessionStorage.removeItem(TOKEN_KEY); } catch (e) {} };
 
-  async function readDB() {
-    const r = await realFetch(TABLE + '?id=eq.main&select=data', { headers: H });
-    if (!r.ok) throw new Error('Supabase Lesefehler (' + r.status + '): ' + (await r.text()));
-    const rows = await r.json();
-    let db = rows[0] && rows[0].data;
-    if (!db || !Object.keys(db).length) db = DEFAULTS();
-    const d = DEFAULTS();
-    for (const k of Object.keys(d)) if (!db[k]) db[k] = d[k];
-    if (!db.staff.some(s => String(s.name).toLowerCase() === 'owner')) db.staff.push(OWNER);
-    return db;
-  }
-  async function writeDB(db) {
-    const r = await realFetch(TABLE, {
-      method: 'POST',
-      headers: Object.assign({ Prefer: 'resolution=merge-duplicates,return=minimal' }, H),
-      body: JSON.stringify({ id: 'main', data: db })
+  async function rpc(name, args) {
+    const r = await realFetch(CFG.SUPABASE_URL + '/rest/v1/rpc/' + name, {
+      method: 'POST', headers: HEAD, body: JSON.stringify(args || {})
     });
-    if (!r.ok) throw new Error('Supabase Schreibfehler (' + r.status + '): ' + (await r.text()));
+    const txt = await r.text();
+    let data = null;
+    try { data = txt ? JSON.parse(txt) : null; } catch (e) { data = { message: txt }; }
+    if (!r.ok) throw new Error((data && (data.message || data.hint)) || ('Supabase-Fehler ' + r.status));
+    return data;
   }
 
-  const sid = (a, b) => String(a) === String(b);
-  const discount = t => ({ 'Silver VIP': 5, 'Gold VIP': 10, 'Black VIP': 15 })[t] || 0;
-  const hhmm = () => new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  const out = (data, ok) => new Response(JSON.stringify(data), { status: ok || 200, headers: { 'Content-Type': 'application/json' } });
+  // Ergebnis der SQL-Funktion -> HTTP-Antwort (Fehler kommen als {error, status})
+  const wrap = d => (d && d.error) ? out({ error: d.error }, d.status || 400) : out(d);
 
-  // Jede Route bekommt (db, body, params) und gibt { res, save } zurück
+  // Mitarbeiter-Aktion (braucht Login-Token)
+  const staff = (action, payload) => async () => {
+    const token = getToken();
+    if (!token) return out({ error: 'Nicht angemeldet' }, 401);
+    const d = await rpc('api_staff_do', { p_token: token, p_action: action, p: payload() });
+    if (d && d.status === 401) setToken(null);
+    return wrap(d);
+  };
+
   const routes = [];
   const route = (method, pattern, fn) => routes.push({ method, re: new RegExp('^' + pattern.replace(/:id/g, '([^/]+)') + '$'), fn });
 
-  route('GET', '/api/state', db => ({ res: db }));
-  route('POST', '/api/status', (db, b) => { db.status = Object.assign({}, db.status, b); return { res: db.status, save: true }; });
-
-  route('POST', '/api/customer/register', (db, b) => {
-    if (!b.username || !b.password) return { status: 400, res: { error: 'Benutzername und Passwort erforderlich' } };
-    if (db.customers.find(c => c.username.toLowerCase() === b.username.toLowerCase())) return { status: 400, res: { error: 'Benutzername bereits vergeben' } };
-    const c = { id: Date.now(), username: b.username, password: b.password, vipStatus: 'Kein', isStammkunde: false, hasHausverbot: false, discount: 0 };
-    db.customers.push(c);
-    return { res: { success: true, customer: c }, save: true };
-  });
-  route('POST', '/api/customer/login', (db, b) => {
-    const c = db.customers.find(x => x.username.toLowerCase() === String(b.username || '').toLowerCase() && x.password === b.password);
-    return c ? { res: { success: true, customer: c } } : { status: 401, res: { error: 'Ungültiger Benutzername oder Passwort' } };
-  });
-
-  route('POST', '/api/vip/apply', (db, b) => {
-    if (!b.username || !b.phone || !b.tier) return { status: 400, res: { error: 'Fehlende Angaben' } };
-    const a = { id: String(Date.now()), username: b.username, phone: b.phone, tier: b.tier, status: 'Ausstehend', timestamp: Date.now() };
-    db.vipApplications.unshift(a);
-    return { res: { success: true, application: a }, save: true };
-  });
-  route('POST', '/api/vip/applications/:id/action', (db, b, [id]) => {
-    const a = db.vipApplications.find(x => sid(x.id, id));
-    if (a) {
-      a.status = b.action;
-      if (b.action === 'Akzeptiert') {
-        const c = db.customers.find(x => x.username.toLowerCase() === a.username.toLowerCase());
-        if (c) { c.vipStatus = a.tier; c.discount = discount(a.tier); }
-      }
+  route('GET', '/api/state', async () => {
+    const token = getToken();
+    if (token) {
+      const d = await rpc('api_staff_state', { p_token: token });
+      if (!(d && d.error)) return out(d);
+      setToken(null); // Sitzung abgelaufen -> öffentliche Sicht
     }
-    return { res: db.vipApplications, save: !!a };
-  });
-  route('PUT', '/api/admin/customer/:id', (db, b, [id]) => {
-    const c = db.customers.find(x => sid(x.id, id));
-    if (c) {
-      c.vipStatus = b.vipStatus ?? c.vipStatus;
-      c.isStammkunde = b.isStammkunde ?? c.isStammkunde;
-      c.hasHausverbot = b.hasHausverbot ?? c.hasHausverbot;
-      c.discount = discount(c.vipStatus);
-    }
-    return { res: db.customers, save: !!c };
+    return out(await rpc('api_public_state'));
   });
 
-  route('POST', '/api/roles/add', (db, b) => {
-    db.roles.push({ id: Date.now(), name: b.name, isManagement: Boolean(b.isManagement), color: b.color || '#c82333' });
-    return { res: db.roles, save: true };
+  route('POST', '/api/staff/login', async (b) => {
+    const d = await rpc('api_staff_login', { p_name: b.name, p_pin: b.pin });
+    if (d && d.token) setToken(d.token);
+    return wrap(d);
   });
-  route('DELETE', '/api/roles/:id', (db, b, [id]) => { db.roles = db.roles.filter(r => !sid(r.id, id)); return { res: db.roles, save: true }; });
+  route('POST', '/api/staff/logout', async () => {
+    const t = getToken(); setToken(null);
+    if (t) await rpc('api_staff_logout', { p_token: t });
+    return out({ success: true });
+  });
 
-  route('POST', '/api/staff/toggle', (db, b) => {
-    const m = db.staff.find(s => sid(s.id, b.id));
-    if (m) { m.onDuty = !m.onDuty; m.clockIn = m.onDuty ? hhmm() : '-'; }
-    return { res: db.staff, save: !!m };
-  });
-  route('POST', '/api/staff/add', (db, b) => {
-    db.staff.push({ id: Date.now(), name: b.name, role: b.role, pin: b.pin || '1234',
-      avatar: b.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80', onDuty: false, clockIn: '-' });
-    return { res: db.staff, save: true };
-  });
-  route('PUT', '/api/staff/:id', (db, b, [id]) => {
-    const m = db.staff.find(s => sid(s.id, id));
-    if (m) { m.name = b.name ?? m.name; m.role = b.role ?? m.role; m.pin = b.pin ?? m.pin; m.avatar = b.avatar ?? m.avatar; }
-    return { res: db.staff, save: !!m };
-  });
-  route('DELETE', '/api/staff/:id', (db, b, [id]) => { db.staff = db.staff.filter(s => !sid(s.id, id)); return { res: db.staff, save: true }; });
+  route('POST', '/api/customer/register', async b => wrap(await rpc('api_customer_register', { p_username: b.username, p_password: b.password })));
+  route('POST', '/api/customer/login', async b => wrap(await rpc('api_customer_login', { p_username: b.username, p_password: b.password })));
+  route('POST', '/api/vip/apply', async b => wrap(await rpc('api_vip_apply', { p_username: b.username, p_phone: b.phone, p_tier: b.tier })));
 
-  route('POST', '/api/menu/add', (db, b) => {
-    db.menu.push({ id: Date.now(), category: b.category, name: b.name, desc: b.desc, price: parseFloat(b.price) });
-    return { res: db.menu, save: true };
-  });
-  route('PUT', '/api/menu/:id', (db, b, [id]) => {
-    const d = db.menu.find(m => sid(m.id, id));
-    if (d) {
-      d.name = b.name ?? d.name; d.category = b.category ?? d.category;
-      d.price = b.price !== undefined ? parseFloat(b.price) : d.price; d.desc = b.desc ?? d.desc;
-    }
-    return { res: db.menu, save: !!d };
-  });
-  route('DELETE', '/api/menu/:id', (db, b, [id]) => { db.menu = db.menu.filter(m => !sid(m.id, id)); return { res: db.menu, save: true }; });
+  // Kasse (Mitarbeiter) bzw. Online-Bestellung (Kunde)
+  route('POST', '/api/orders', async b => isStaffPage && getToken() ? staff('order_create', () => b)() : wrap(await rpc('api_place_order', { p: b })));
+  route('POST', '/api/reservations', async b => wrap(await rpc('api_place_reservation', { p: b })));
 
-  route('POST', '/api/orders', (db, b) => {
-    const o = { id: Math.floor(1000 + Math.random() * 9000), staffId: b.staffId ? parseInt(b.staffId) : null,
-      customer: b.customer || 'Tisch / Laufkunde', table: b.table || 'Abholung', items: b.items, total: b.total,
-      status: 'In Zubereitung', time: hhmm(), timestamp: Date.now() };
-    db.orders.unshift(o);
-    return { res: o, save: true };
-  });
-  route('POST', '/api/orders/:id/status', (db, b, [id]) => {
-    const o = db.orders.find(x => sid(x.id, id));
-    if (o) o.status = b.status;
-    return { res: db.orders, save: !!o };
-  });
-  route('POST', '/api/reservations', (db, b) => {
-    const r = Object.assign({ id: String(Date.now()) }, b, { status: 'Bestätigt' });
-    db.reservations.unshift(r);
-    return { res: r, save: true };
-  });
-  route('DELETE', '/api/reservations/:id', (db, b, [id]) => { db.reservations = db.reservations.filter(r => !sid(r.id, id)); return { res: db.reservations, save: true }; });
-
-  const json = (obj, status) => new Response(JSON.stringify(obj), { status: status || 200, headers: { 'Content-Type': 'application/json' } });
-
-  // Schreibzugriffe nacheinander abarbeiten, damit sich schnelle Klicks nicht überschreiben
-  let queue = Promise.resolve();
+  route('POST', '/api/status', async b => staff('status', () => b)());
+  route('POST', '/api/staff/toggle', async b => staff('toggle', () => ({ id: String(b.id) }))());
+  route('POST', '/api/staff/add', async b => staff('staff_add', () => b)());
+  route('PUT', '/api/staff/:id', async (b, [id]) => staff('staff_update', () => Object.assign({}, b, { id }))());
+  route('DELETE', '/api/staff/:id', async (b, [id]) => staff('staff_delete', () => ({ id }))());
+  route('POST', '/api/roles/add', async b => staff('role_add', () => b)());
+  route('DELETE', '/api/roles/:id', async (b, [id]) => staff('role_delete', () => ({ id }))());
+  route('POST', '/api/menu/add', async b => staff('menu_add', () => b)());
+  route('PUT', '/api/menu/:id', async (b, [id]) => staff('menu_update', () => Object.assign({}, b, { id }))());
+  route('DELETE', '/api/menu/:id', async (b, [id]) => staff('menu_delete', () => ({ id }))());
+  route('POST', '/api/orders/:id/status', async (b, [id]) => staff('order_status', () => ({ id, status: b.status }))());
+  route('DELETE', '/api/reservations/:id', async (b, [id]) => staff('reservation_delete', () => ({ id }))());
+  route('POST', '/api/vip/applications/:id/action', async (b, [id]) => staff('vip_action', () => ({ id, action: b.action }))());
+  route('PUT', '/api/admin/customer/:id', async (b, [id]) => staff('customer_update', () => Object.assign({}, b, { id }))());
 
   window.fetch = function (input, init) {
     const url = typeof input === 'string' ? input : input.url;
     const m = url.match(/\/api\/[^?#]*/);
-    if (!m || /^https?:\/\//.test(url) && !url.startsWith(location.origin)) return realFetch(input, init);
+    if (!m || (/^https?:\/\//.test(url) && !url.startsWith(location.origin))) return realFetch(input, init);
     const path = m[0];
     const method = ((init && init.method) || 'GET').toUpperCase();
     let body = {};
@@ -159,22 +95,11 @@
       if (r.method !== method) continue;
       const mm = path.match(r.re);
       if (!mm) continue;
-      const run = async () => {
-        try {
-          const db = await readDB();
-          const out = r.fn(db, body, mm.slice(1));
-          if (out.save) await writeDB(db);
-          return json(out.res, out.status);
-        } catch (err) {
-          console.error(err);
-          return json({ error: err.message }, 500);
-        }
-      };
-      if (method === 'GET') return run();
-      const p = queue.then(run, run);
-      queue = p.catch(() => {});
-      return p;
+      return Promise.resolve().then(() => r.fn(body, mm.slice(1))).catch(err => {
+        console.error(err);
+        return out({ error: err.message }, 500);
+      });
     }
-    return Promise.resolve(json({ error: 'Unbekannte Route ' + path }, 404));
+    return Promise.resolve(out({ error: 'Unbekannte Route ' + path }, 404));
   };
 })();
