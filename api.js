@@ -4,6 +4,9 @@
    Passwörter/PINs liegen nur als Hash in der Datenbank. */
 (function () {
   const CFG = window.SOUL_CONFIG;
+  // Adresse bereinigen: Leerzeichen, Schrägstriche am Ende und ein versehentliches "/rest/v1" entfernen
+  CFG.SUPABASE_URL = String(CFG.SUPABASE_URL || '').trim().replace(/\/+$/, '').replace(/\/rest\/v1$/i, '').replace(/\/+$/, '');
+  CFG.SUPABASE_KEY = String(CFG.SUPABASE_KEY || '').trim();
   const realFetch = window.fetch.bind(window);
   const HEAD = { apikey: CFG.SUPABASE_KEY, 'Content-Type': 'application/json' };
   const TOKEN_KEY = 'soulStaffToken';
