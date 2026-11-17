@@ -1,15 +1,15 @@
 :root {
-    --bg-dark: #0a0a0c;
-    --panel-dark: #121216;
-    --panel-border: rgba(255, 255, 255, 0.12);
-    --accent-red: #c82333;
-    --accent-red-hover: #e02b3d;
-    --text-main: #ffffff;
-    --text-muted: #b0b3b8;
-    --green-live: #2ecc71;
-    --gold-role: #d4af37;
-    --font-serif: 'Cormorant Garamond', Georgia, serif;
-    --font-sans: 'Montserrat', sans-serif;
+    --bg-dark: #0b0d15;
+    --panel-dark: #121521;
+    --panel-border: rgba(241, 233, 218, 0.12);
+    --accent-red: #d8392c;
+    --accent-red-hover: #e8483a;
+    --text-main: #f1e9da;
+    --text-muted: #a3a2b0;
+    --green-live: #86b99a;
+    --gold-role: #f0b866;
+    --font-serif: 'Shippori Mincho', Georgia, serif;
+    --font-sans: 'Zen Kaku Gothic New', system-ui, sans-serif;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -146,8 +146,8 @@ input, select { width: 100%; background: #0a0a0c; border: 1px solid var(--panel-
 /* =========================================================
    MITARBEITERPORTAL (staff.html) & TEAMLISTE
    ========================================================= */
-.staff-page-body { background: #08080a; min-height: 100vh; }
-.staff-login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; background: radial-gradient(circle at top, #18181f 0%, #08080a 75%); }
+.staff-page-body { background: #090b12; min-height: 100vh; }
+.staff-login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; background: radial-gradient(circle at 50% 0%, #1c2033 0%, #090b12 70%); }
 .login-card { background: #111116; border: 1px solid rgba(255, 255, 255, 0.14); width: 100%; max-width: 440px; padding: 36px; }
 .field-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: #9ea3ab; margin-bottom: 6px; text-transform: uppercase; }
 .demo-pins-box { margin-top: 18px; padding: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); font-size: 11px; line-height: 1.6; color: #aaa; text-align: center; }
@@ -265,3 +265,14 @@ input, select { width: 100%; background: #0a0a0c; border: 1px solid var(--panel-
     border-color: var(--accent-red);
 }
 
+
+/* Mitarbeiterportal: weichere Bedienelemente, gleiche Farbwelt */
+.ws-tab, .admin-subtab, .btn-red, .btn-white, .btn-nav-outline { border-radius: 999px; transition: transform .25s cubic-bezier(.2,.7,.2,1), background .25s, border-color .25s, box-shadow .25s; letter-spacing: 0; }
+.ws-tab:hover, .admin-subtab:hover, .btn-nav-outline:hover { border-color: #f0b866; }
+.btn-red:hover, .btn-white:hover { transform: translateY(-1px); }
+.kpi-card, .admin-card, .staff-card, .list-item-card, .order-ticket, .pos-ticket, .pos-btn { border-radius: 4px; transition: border-color .3s, transform .35s cubic-bezier(.2,.7,.2,1); }
+.kpi-card:hover, .staff-card:hover, .pos-btn:hover { border-color: rgba(241,233,218,.28); transform: translateY(-2px); }
+.modal-box { animation: pop .4s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes pop { from { opacity: 0; transform: translateY(16px) scale(.98); } }
+:focus-visible { outline: 2px solid #f0b866; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }

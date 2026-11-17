@@ -128,9 +128,6 @@ function renderMenu() {
             type="button"
             class="btn-nav-outline ${cat === activeCategory ? 'active' : ''}"
             onclick="selectMenuCategory('${cat}')"
-            style="${cat === activeCategory
-                ? 'background:#c82333; border-color:#c82333;'
-                : ''}"
         >
             ${cat}
         </button>
@@ -141,26 +138,16 @@ function renderMenu() {
     );
 
     gridContainer.innerHTML = filteredDishes.map(d => `
-        <div style="background:#141414; border:1px solid rgba(255,255,255,0.08); padding:20px; border-radius:8px; display:flex; flex-direction:column; justify-content:space-between;">
+        <div class="dish-card">
             <div>
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
-                    <h4 style="font-family:'Cormorant Garamond',serif; font-size:22px; margin:0; color:#fff;">
-                        ${d.name}
-                    </h4>
-                    <strong style="color:#c82333; font-size:16px;">
-                        ${d.price.toFixed(2).replace('.', ',')} €
-                    </strong>
+                <div class="dish-top">
+                    <h4>${d.name}</h4>
+                    <strong class="dish-price">${d.price.toFixed(2).replace('.', ',')} €</strong>
                 </div>
-                <p style="color:#aaa; font-size:13px; line-height:1.5; margin:0 0 20px 0;">
-                    ${d.desc || ''}
-                </p>
+                <p class="dish-desc">${d.desc || ''}</p>
             </div>
-            <button
-                type="button"
-                class="btn-red full-width"
-                onclick="addToCart(${d.id})"
-            >
-                + In den Warenkorb
+            <button type="button" class="btn-red full-width" onclick="addToCart(${d.id})">
+                In den Warenkorb
             </button>
         </div>
     `).join('');
@@ -177,26 +164,18 @@ function renderTeam() {
     if (!teamContainer) return;
 
     teamContainer.innerHTML = appState.staff.map(s => `
-        <div style="background:#141414; border:1px solid rgba(255,255,255,0.08); border-radius:8px; overflow:hidden; display:flex; flex-direction:column;">
-            <div style="height:220px; overflow:hidden; position:relative;">
+        <div class="team-card">
+            <div class="team-photo">
                 <img
                     src="${s.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'}"
                     alt="${s.name}"
-                    style="width:100%; height:100%; object-fit:cover;"
+                    loading="lazy"
                 >
-                <span style="position:absolute; top:10px; right:10px; background:${s.onDuty ? '#2ecc71' : '#555'}; color:#fff; font-size:10px; font-weight:700; padding:4px 8px; border-radius:12px;">
-                    ${s.onDuty ? '🟢 IM DIENST' : '⚫ FREI'}
-                </span>
+                <span class="team-duty ${s.onDuty ? 'on' : 'off'}">${s.onDuty ? 'Im Dienst' : 'Frei'}</span>
             </div>
-            <div style="padding:20px; display:flex; flex-direction:column; flex:1; justify-content:space-between;">
-                <div>
-                    <span style="color:#c82333; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:5px;">
-                        ${s.role}
-                    </span>
-                    <h4 style="font-family:'Cormorant Garamond',serif; font-size:24px; margin:0; color:#fff;">
-                        ${s.name}
-                    </h4>
-                </div>
+            <div class="team-info">
+                <span class="team-role">${s.role}</span>
+                <h4>${s.name}</h4>
             </div>
         </div>
     `).join('');
@@ -785,19 +764,19 @@ async function loadMyAppointments() {
 
         if (!res.ok) throw new Error(data.error || 'Fehler');
 
-        const colors = { 'In Bearbeitung': '#aaa', 'Akzeptiert': '#2ecc71', 'Abgelehnt': '#c82333', 'Verschoben': '#e67e22' };
+        const colors = { 'In Bearbeitung': '#a3a2b0', 'Akzeptiert': '#86b99a', 'Abgelehnt': '#e8574a', 'Verschoben': '#f0b866' };
         const list = data.appointments || [];
 
         box.innerHTML = list.length === 0
             ? '<p style="color:#888; font-size:13px;">Noch keine Termine.</p>'
             : list.map(a => `
-                <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px;">
+                <div style="background: rgba(241,233,218,.04); border: 1px solid rgba(241,233,218,.1); border-radius: 3px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px;">
                     <div style="display:flex; justify-content:space-between; gap:10px;">
                         <strong>${escHtml(a.concern)}</strong>
                         <strong style="color:${colors[a.status] || '#aaa'}; white-space:nowrap;">${escHtml(a.status)}</strong>
                     </div>
                     <div style="color:#aaa; margin-top:4px;">${a.status === 'Verschoben'
-                        ? `Verschoben auf <strong style="color:#e67e22;">📅 ${escHtml(a.date)} · 🕒 ${escHtml(a.time)}</strong><br>vorher: ${escHtml(a.origDate)} ${escHtml(a.origTime)}`
+                        ? `Verschoben auf <strong style="color:#f0b866;">📅 ${escHtml(a.date)} · 🕒 ${escHtml(a.time)}</strong><br>vorher: ${escHtml(a.origDate)} ${escHtml(a.origTime)}`
                         : `📅 ${escHtml(a.date)} · 🕒 ${escHtml(a.time)}`}</div>
                 </div>
             `).join('');

@@ -5,68 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SOUL SUSHI — Japanese Kitchen</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <style>
-        body { background-color: #0a0a0a; color: #fff; font-family: 'Montserrat', sans-serif; margin: 0; padding: 0; overflow-x: hidden; }
-        
-        .top-watermark-bar { background: #0c0c0c; color: #888; font-size: 11px; text-align: center; padding: 7px; border-bottom: 1px solid rgba(255,255,255,0.06); letter-spacing: 1.5px; text-transform: uppercase; }
-        .top-watermark-bar span { color: #c82333; font-weight: 700; }
-
-        .site-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 50px; background: #0f0f0f; border-bottom: 1px solid rgba(255,255,255,0.1); position: sticky; top: 0; z-index: 1000; }
-        .header-brand { display: flex; align-items: center; gap: 15px; }
-        .emblem-badge { width: 50px; height: 50px; border: 2px solid #c82333; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #151515; }
-        .emblem-kanji { color: #c82333; font-size: 20px; font-weight: bold; }
-        .brand-text h1 { font-size: 18px; margin: 0; font-weight: 800; letter-spacing: 2px; }
-        .brand-text span { font-size: 10px; color: #aaa; letter-spacing: 3px; }
-        .main-nav { display: flex; gap: 30px; }
-        .main-nav a { color: #ccc; text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
-        .main-nav a:hover { color: #c82333; }
-        .header-actions { display: flex; align-items: center; gap: 15px; }
-        .status-badge { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; padding: 6px 12px; background: rgba(46,204,113,0.15); color: #2ecc71; border-radius: 20px; }
-        .status-dot { width: 8px; height: 8px; background: #2ecc71; border-radius: 50%; box-shadow: 0 0 8px #2ecc71; }
-        .btn-nav-outline { background: transparent; border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 8px 16px; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center; }
-        .btn-nav-outline:hover { border-color: #fff; background: rgba(255,255,255,0.05); }
-        .btn-red { background: #c82333; border: none; color: #fff; padding: 9px 18px; border-radius: 4px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.2s; text-decoration: none; display: inline-flex; align-items: center; }
-        .btn-red:hover { background: #a71d2a; }
-        
-        .hero-section { display: flex; align-items: center; justify-content: space-between; min-height: 85vh; padding: 60px 80px; background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.85)), url('https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1920&q=80') center/cover; gap: 50px; }
-        .hero-content { max-width: 600px; }
-        .eyebrow-red { color: #c82333; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; display: block; margin-bottom: 15px; }
-        .hero-title { font-family: 'Cormorant Garamond', serif; font-size: 64px; line-height: 1.1; margin: 0 0 20px 0; font-weight: 700; }
-        .hero-desc { color: #bbb; font-size: 16px; line-height: 1.6; margin-bottom: 30px; }
-        .hero-buttons { display: flex; gap: 15px; align-items: center; margin-bottom: 30px; }
-        .hero-status-bar { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #aaa; }
-        .status-dot-green { width: 8px; height: 8px; background: #2ecc71; border-radius: 50%; display: inline-block; }
-        
-        .hero-right-box { flex: 1; max-width: 450px; background: rgba(15,15,15,0.85); backdrop-filter: blur(10px); padding: 45px; border-radius: 8px; border-left: 4px solid #c82333; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
-        
-        .content-section { padding: 80px 80px; }
-        .section-header { margin-bottom: 40px; }
-        .section-header h2 { font-family: 'Cormorant Garamond', serif; font-size: 42px; margin: 5px 0 0 0; }
-        .site-footer { text-align: center; padding: 40px; background: #050505; color: #777; font-size: 13px; border-top: 1px solid rgba(255,255,255,0.05); }
-
-        .vip-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
-        .vip-card { background: #141414; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 35px; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
-        .vip-card.silver { border-top: 4px solid #b0c4de; }
-        .vip-card.gold { border-top: 4px solid #d4af37; }
-        .vip-card.black { border-top: 4px solid #fff; background: linear-gradient(135deg, #141414 0%, #1f1f1f 100%); }
-        .vip-price { font-family: 'Cormorant Garamond', serif; font-size: 38px; font-weight: 700; color: #fff; margin: 15px 0; }
-        .vip-features { list-style: none; padding: 0; margin: 20px 0 30px 0; }
-        .vip-features li { font-size: 14px; color: #ccc; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
-        .vip-features li::before { content: "✓"; color: #c82333; font-weight: bold; }
-
-        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 9999; }
-        .modal-backdrop.open { display: flex; }
-        .modal-box { background: #141414; border: 1px solid rgba(255,255,255,0.1); padding: 35px; border-radius: 8px; width: 100%; max-width: 450px; box-shadow: 0 15px 35px rgba(0,0,0,0.8); }
-        .modal-box h3 { font-family: 'Cormorant Garamond', serif; font-size: 32px; margin: 5px 0 20px 0; }
-        .field-label { display: block; font-size: 11px; font-weight: 700; color: #aaa; letter-spacing: 1.5px; margin-bottom: 6px; text-transform: uppercase; }
-        .modal-box input, .modal-box select { width: 100%; background: #1f1f1f; border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 12px; border-radius: 4px; font-size: 14px; margin-bottom: 15px; box-sizing: border-box; }
-        .form-row { display: flex; gap: 10px; }
-        .full-width { width: 100%; justify-content: center; }
-        .cart-total-row { display: flex; justify-content: space-between; font-size: 16px; padding: 15px 0; border-top: 1px solid rgba(255,255,255,0.1); border-bottom: 1px solid rgba(255,255,255,0.1); margin: 15px 0; }
-        .toast { position: fixed; bottom: 30px; right: 30px; background: #c82333; color: #fff; padding: 15px 25px; border-radius: 6px; font-weight: 600; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 99999; display: none; }
-    </style>
+    <link rel="stylesheet" href="site.css">
 </head>
 <body>
 
@@ -102,9 +43,11 @@
     </header>
 
     <section class="hero-section">
+        <div class="hero-kanji" aria-hidden="true">魂</div>
+        <div id="embers" aria-hidden="true"></div>
         <div class="hero-content">
             <!-- HIER GEÄNDERT: Köln PLZ 7000 -->
-            <span class="eyebrow-red">SUSHI BAR · KÖLN PLZ 7000</span>
+            <span class="eyebrow-red">Sushi Bar in Köln, PLZ 7000</span>
             <h2 class="hero-title">Handwerk, <br>das man schmeckt.</h2>
             <p class="hero-desc">Frischer Fisch, gereifter Reis und Meisterarbeit von Hand — gegründet aus Leidenschaft zur japanischen Küche, direkt in Köln.</p>
             <div class="hero-buttons">
@@ -114,9 +57,8 @@
             <div class="hero-status-bar"><span class="status-dot-green"></span><span id="heroStatusSpan">GEÖFFNET</span> · <span id="heroActiveStaff">1 im Dienst</span> · Auslastung <span id="heroWorkload">Niedrig</span></div>
         </div>
         <div class="hero-right-box">
-            <span class="eyebrow-red">DIRECTED FROM THE HEART</span>
-            <h3 style="font-family: 'Cormorant Garamond', serif; font-size: 34px; color: #fff; margin: 10px 0 15px 0;">Dein Hotspot <br>in Köln.</h3>
-            <p style="color: #ccc; font-size: 14px; line-height: 1.6; margin-bottom: 25px;">Erlebe exzellentes Sushi und japanische Gastfreundschaft im Herzen von Köln (PLZ 7000).</p>
+            <h3>Dein Hotspot <br>in Köln.</h3>
+            <p>Erlebe exzellentes Sushi und japanische Gastfreundschaft im Herzen von Köln (PLZ 7000).</p>
             <button type="button" class="btn-red full-width" onclick="openReservationModal()">Tisch in Köln sichern</button>
         </div>
     </section>
@@ -124,64 +66,60 @@
     <main>
         <section id="speisekarte" class="content-section">
             <div class="section-header">
-                <span class="eyebrow-red">UNSERE GERICHTE</span>
                 <h2>Speisekarte & Menü</h2>
             </div>
-            <div id="menuTabsContainer" class="menu-tabs-row" style="display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap;"></div>
-            <div id="menuGridContainer" class="menu-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;"></div>
+            <div id="menuTabsContainer" class="menu-tabs-row"></div>
+            <div id="menuGridContainer" class="menu-grid"></div>
         </section>
 
         <!-- VIP CLUB BEREICH -->
-        <section id="vip" class="content-section" style="background: #0d0d0d;">
+        <section id="vip" class="content-section">
             <div class="section-header">
-                <span class="eyebrow-red">EXKLUSIVE MITGLIEDSCHAFT</span>
                 <h2>Soul Sushi VIP Club</h2>
             </div>
             <div class="vip-grid">
                 <div class="vip-card silver">
                     <div>
-                        <span style="color: #b0c4de; font-size: 11px; font-weight: 700; letter-spacing: 2px;">STUFE 1</span>
-                        <h3 style="font-family: 'Cormorant Garamond', serif; font-size: 28px; margin: 5px 0 0 0;">Silver VIP</h3>
+                        <span class="vip-tier-label">Stufe 1</span>
+                        <h3>Silver VIP</h3>
                         <div class="vip-price">45.000 €</div>
                         <ul class="vip-features"><li>5 % Rabatt auf alle Speisen</li><li>Kostenloses Getränk pro Besuch</li></ul>
                     </div>
-                    <button type="button" class="btn-white full-width" style="margin-top: 20px;" onclick="openVipApplyModal('Silver VIP')">Silver Mitglied werden</button>
+                    <button type="button" class="btn-white full-width" onclick="openVipApplyModal('Silver VIP')">Silver Mitglied werden</button>
                 </div>
                 <div class="vip-card gold">
                     <div>
-                        <span style="color: #d4af37; font-size: 11px; font-weight: 700; letter-spacing: 2px;">STUFE 2</span>
-                        <h3 style="font-family: 'Cormorant Garamond', serif; font-size: 28px; margin: 5px 0 0 0;">Gold VIP</h3>
+                        <span class="vip-tier-label">Stufe 2</span>
+                        <h3>Gold VIP</h3>
                         <div class="vip-price">75.000 €</div>
                         <ul class="vip-features"><li>10 % Rabatt auf alle Speisen</li><li>Kostenloses Getränk und Dessert pro Besuch</li></ul>
                     </div>
-                    <button type="button" class="btn-red full-width" style="margin-top: 20px;" onclick="openVipApplyModal('Gold VIP')">Gold Mitglied werden</button>
+                    <button type="button" class="btn-red full-width" onclick="openVipApplyModal('Gold VIP')">Gold Mitglied werden</button>
                 </div>
                 <div class="vip-card black">
                     <div>
-                        <span style="color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 2px;">HÖCHSTE STUFE</span>
-                        <h3 style="font-family: 'Cormorant Garamond', serif; font-size: 28px; margin: 5px 0 0 0;">Black VIP</h3>
+                        <span class="vip-tier-label">Höchste Stufe</span>
+                        <h3>Black VIP</h3>
                         <div class="vip-price">125.000 €</div>
                         <ul class="vip-features"><li>15 % Rabatt auf alle Speisen</li><li>Kostenloses VIP-Menü einmal pro Woche</li><li>Bevorzugte Bedienung</li><li>Exklusive Einladung zu VIP-Events</li></ul>
                     </div>
-                    <button type="button" class="btn-red full-width" style="margin-top: 20px; background: #fff; color: #000;" onclick="openVipApplyModal('Black VIP')">Black Mitglied werden</button>
+                    <button type="button" class="btn-red full-width" style="background: var(--washi); color: var(--ink); border-color: var(--washi);" onclick="openVipApplyModal('Black VIP')">Black Mitglied werden</button>
                 </div>
             </div>
         </section>
 
         <section id="team" class="content-section">
             <div class="section-header">
-                <span class="eyebrow-red">DIE KÖPFE HINTER DEN MESSERN</span>
                 <h2>Unser Team</h2>
             </div>
-            <div id="teamGridContainer" class="teamlist-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;"></div>
+            <div id="teamGridContainer" class="teamlist-cards-grid"></div>
         </section>
 
         <section id="about" class="content-section">
             <div class="section-header">
-                <span class="eyebrow-red">PHILOSOPHIE</span>
                 <h2>Über Uns</h2>
             </div>
-            <p style="color: #aaa; max-width: 800px; line-height: 1.8; font-size: 15px;">Soul Sushi steht für kompromisslose Frische, traditionelles japanisches Handwerk und moderne Eleganz in Köln.</p>
+            <p>Soul Sushi steht für kompromisslose Frische, traditionelles japanisches Handwerk und moderne Eleganz in Köln.</p>
         </section>
     </main>
 
@@ -189,8 +127,7 @@
 
     <!-- KUNDEN LOGIN / REGISTRIERUNGS MODAL -->
     <div class="modal-backdrop" id="customerAuthModal">
-        <div class="modal-box" style="max-width: 420px; border-top: 3px solid var(--accent-red);">
-            <span class="eyebrow-red">KUNDENPORTAL</span>
+        <div class="modal-box" style="max-width: 420px;">
             <h3 id="authModalTitle">Anmelden</h3>
             <div id="authErrorMsg" style="color: #c82333; font-size: 12px; margin-bottom: 10px; display: none;"></div>
             
@@ -212,15 +149,14 @@
 
     <!-- KUNDEN PROFIL DASHBOARD MODAL -->
     <div class="modal-backdrop" id="customerProfileModal">
-        <div class="modal-box" style="max-width: 480px; border-top: 3px solid #2ecc71; position: relative;">
+        <div class="modal-box" style="max-width: 480px;">
             <button type="button" class="profile-close-btn" onclick="closeCustomerAuthModal()" aria-label="Profil schließen" title="Schließen">&times;</button>
-            <span class="eyebrow-red">DEIN KUNDENKONTO</span>
             <h3 id="profileUsernameTitle">Willkommen</h3>
-            <div style="background: rgba(255,255,255,0.04); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.08);">
-                <p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Kundenstatus:</strong> <span id="profileVipBadge" style="color: var(--accent-red);">Kein VIP</span></p>
+            <div style="background: rgba(241,233,218,.04); padding: 20px; border-radius: 3px; margin-bottom: 20px; border: 1px solid var(--line);">
+                <p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Kundenstatus:</strong> <span id="profileVipBadge" style="color: var(--lantern);">Kein VIP</span></p>
                 <p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Stammkunden-Status:</strong> <span id="profileStammBadge">Nein</span></p>
-                <p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Hausverbot:</strong> <span id="profileHausverbotBadge" style="color: #2ecc71;">Nein</span></p>
-                <p style="margin: 0; font-size: 14px;"><strong>Dein Rabatt:</strong> <span id="profileDiscount" style="color: #2ecc71;">0 %</span></p>
+                <p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Hausverbot:</strong> <span id="profileHausverbotBadge" style="color: var(--matcha);">Nein</span></p>
+                <p style="margin: 0; font-size: 14px;"><strong>Dein Rabatt:</strong> <span id="profileDiscount" style="color: var(--matcha);">0 %</span></p>
             </div>
             <div style="margin-bottom: 20px;">
                 <p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Deine Termine</strong></p>
@@ -232,15 +168,14 @@
 
     <!-- VIP BEWERBUNGS MODAL -->
     <div class="modal-backdrop" id="vipApplyModal">
-        <div class="modal-box" style="max-width: 420px; border-top: 3px solid #d4af37;">
-            <span class="eyebrow-red">VIP BEWERBUNG</span>
+        <div class="modal-box" style="max-width: 420px;">
             <h3 id="vipApplyTitle">VIP Mitglied werden</h3>
             <p style="font-size: 13px; color: #ccc; margin-bottom: 15px;">Bitte gib deine Handynummer an, damit unsere Leitungsebene deinen Antrag bearbeiten kann.</p>
             <form onsubmit="submitVipApplication(event)">
                 <input type="hidden" id="vipApplyTier">
                 <label class="field-label">HANDYNUMMER</label>
                 <input type="tel" id="vipApplyPhone" required placeholder="+49 176 ...">
-                <div class="form-row" style="margin-top: 20px;">
+                <div class="form-row">
                     <button type="button" class="btn-nav-outline full-width" onclick="closeVipApplyModal()">Abbrechen</button>
                     <button type="submit" class="btn-red full-width">Antrag absenden</button>
                 </div>
@@ -251,7 +186,6 @@
     <!-- TERMIN VEREINBAREN -->
     <div class="modal-backdrop" id="appointmentModal">
         <div class="modal-box">
-            <span class="eyebrow-red">TERMIN VEREINBAREN</span>
             <h3>Termin anfragen</h3>
             <form onsubmit="submitAppointment(event)">
                 <label class="field-label">NAME</label>
@@ -274,7 +208,6 @@
 
     <div class="modal-backdrop" id="reservationModal">
         <div class="modal-box">
-            <span class="eyebrow-red">TISCH RESERVIEREN</span>
             <h3>Reservierung anfragen</h3>
             <form onsubmit="submitReservation(event)">
                 <label class="field-label">NAME</label>
@@ -300,7 +233,6 @@
 
     <div class="modal-backdrop" id="cartModal">
         <div class="modal-box">
-            <span class="eyebrow-red">DEINE BESTELLUNG</span>
             <h3>Warenkorb</h3>
             <div id="cartItemsList" style="margin: 15px 0; max-height: 250px; overflow-y: auto;"></div>
             <div class="cart-total-row"><span>Gesamtsumme:</span><strong id="cartModalTotal">0,00 €</strong></div>
@@ -312,11 +244,12 @@
     </div>
 
     <div id="toast" class="toast"></div>
-    <div id="discordCommunityLink" style="text-align:center;padding:18px 12px;background:#111;color:#eee;">
-        <a id="discordInviteAnchor" href="#" target="_blank" rel="noopener noreferrer" style="display:none;color:#8da8ff;font-weight:700;text-decoration:none;">💬 Tritt unserem Discord-Server bei</a>
+    <div id="discordCommunityLink" style="text-align:center;padding:18px 12px;background:#07080d;color:var(--washi);">
+        <a id="discordInviteAnchor" href="#" target="_blank" rel="noopener noreferrer" style="display:none;color:var(--lantern);font-weight:700;text-decoration:none;">💬 Tritt unserem Discord-Server bei</a>
     </div>
     <script src="config.js"></script>
     <script src="api.js"></script>
     <script src="app.js"></script>
+    <script src="fx.js"></script>
 </body>
 </html>
