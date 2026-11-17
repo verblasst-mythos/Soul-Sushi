@@ -127,6 +127,9 @@ begin
       res := private.customer_view(d->'customers');
 
     when 'customer_delete' then
+      if private.arr_get(d->'customers', p->>'id') is null then
+        return jsonb_build_object('error', 'Kundenkonto wurde nicht gefunden oder bereits gelöscht.', 'status', 404);
+      end if;
       d := jsonb_set(d, '{customers}', private.arr_del(d->'customers', p->>'id'));
       res := private.customer_view(d->'customers');
 

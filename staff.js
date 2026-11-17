@@ -489,13 +489,41 @@ function renderAllViews() {
 }
 
 async function deleteCustomer(id, username) {
-    if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
-    const ok = await showActionConfirm('Kundenkonto endgültig löschen?', `Das Konto von ${username} wird dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.`, 'Konto löschen');
+    if (!isManagementUser(currentUser)) {
+        showToast('❌ Nur die Geschäftsleitung darf Kundenkonten löschen.');
+        return;
+    }
+
+    const customerId = String(id);
+    const ok = await showActionConfirm(
+        'Kundenkonto endgültig löschen?',
+        `Das Konto von ${username} wird dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.`,
+        'Ja, endgültig löschen'
+    );
     if (!ok) return;
-    const res = await fetch(`/api/admin/customer/${id}`, { method: 'DELETE' });
-    if (!res.ok) { const err = await res.json().catch(() => ({})); return showToast('❌ ' + (err.error || 'Konto konnte nicht gelöscht werden')); }
-    await fetchState();
-    showToast(`🗑️ Kundenkonto von ${username} gelöscht`);
+
+    try {
+        showToast('⏳ Kundenkonto wird gelöscht …');
+        const res = await fetch(`/api/admin/customer/${encodeURIComponent(customerId)}`, {
+            method: 'DELETE',
+            headers: { 'Accept': 'application/json' },
+            cache: 'no-store'
+        });
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok || result.error) {
+            throw new Error(result.error || `Löschen fehlgeschlagen (HTTP ${res.status})`);
+        }
+
+        await fetchState();
+        const stillExists = (appState.customers || []).some(c => String(c.id) === customerId);
+        if (stillExists) {
+            throw new Error('Supabase hat das Konto nicht aus der Kundenliste entfernt. Bitte SQL-Update prüfen.');
+        }
+        showToast(`✅ Kundenkonto von ${username} wurde gelöscht.`);
+    } catch (error) {
+        console.error('Kundenkonto löschen:', error);
+        showToast('❌ ' + (error && error.message ? error.message : 'Kundenkonto konnte nicht gelöscht werden.'));
+    }
 }
 
 async function updateCustomerStatus(id, vipStatus, isStammkunde, hasHausverbot) {
