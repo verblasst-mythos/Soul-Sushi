@@ -447,10 +447,13 @@ function renderAllViews() {
                             <button type="button" class="btn-white" style="padding:6px 10px; font-size:11px; background:#2ecc71; color:#fff;" onclick="handleVipAppAction('${app.id}', 'Akzeptiert')">Akzeptieren</button>
                             <button type="button" class="btn-white" style="padding:6px 10px; font-size:11px; background:#e67e22; color:#fff;" onclick="handleVipAppAction('${app.id}', 'Warteliste')">Warteliste</button>
                             <button type="button" class="btn-red" style="padding:6px 10px; font-size:11px;" onclick="handleVipAppAction('${app.id}', 'Abgelehnt')">Ablehnen</button>
+                            ${app.status === 'Abgelehnt' ? `<button type="button" class="btn-nav-outline" style="padding:6px 10px; font-size:11px;" onclick="deleteVipApp('${app.id}')">🗑️ Löschen</button>` : ''}
                         </div>
                     </div>
                 `).join('');
         }
+
+        renderAppointments();
 
         document.getElementById('accountsManageList').innerHTML =
             appState.staff.map(s => {
@@ -824,6 +827,120 @@ async function handleVipAppAction(id, action) {
     await fetchState();
 
     showToast(`✅ Antrag auf „${action}“ gesetzt!`);
+}
+
+async function deleteVipApp(id) {
+    if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
+
+    const ok = await showActionConfirm('Antrag löschen?', 'Der abgelehnte Antrag wird dauerhaft entfernt.', 'Ja, löschen');
+    if (!ok) return;
+
+    const res = await fetch(`/api/vip/applications/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) return showToast('❌ ' + (data.error || 'Löschen fehlgeschlagen'));
+
+    await fetchState();
+    showToast('🗑️ Antrag gelöscht');
+}
+
+async function deleteRejectedVipApps() {
+    if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
+
+    const count = (appState.vipApplications || []).filter(a => a.status === 'Abgelehnt').length;
+    if (!count) return showToast('Keine abgelehnten Anträge vorhanden.');
+
+    const ok = await showActionConfirm('Alle abgelehnten löschen?', `${count} abgelehnte Anträge werden dauerhaft entfernt.`, 'Ja, alle löschen');
+    if (!ok) return;
+
+    const res = await fetch('/api/vip/applications-delete-rejected', { method: 'POST' });
+    if (!res.ok) return showToast('❌ Löschen fehlgeschlagen');
+
+    await fetchState();
+    showToast('🗑️ Abgelehnte Anträge gelöscht');
+}
+
+// Termine
+let lastApptSig = '';
+
+function escHtml(v) {
+    return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function renderAppointments() {
+    const el = document.getElementById('adminAppointmentsList');
+    if (!el) return;
+
+    const list = appState.appointments || [];
+    const sig = JSON.stringify(list);
+
+    // Nicht neu zeichnen, wenn sich nichts geändert hat (sonst gehen Eingaben im 5s-Takt verloren)
+    if (sig === lastApptSig && el.innerHTML) return;
+    lastApptSig = sig;
+
+    const colors = { 'In Bearbeitung': '#aaa', 'Angenommen': '#2ecc71', 'Abgelehnt': '#c82333', 'Verschoben': '#e67e22' };
+
+    el.innerHTML = list.length === 0
+        ? '<p style="color:#888;">Keine Terminanfragen.</p>'
+        : list.map(a => `
+            <div class="list-item-card" style="flex-direction:column; align-items:stretch; gap:10px; margin-bottom:10px;">
+                <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                    <div>
+                        <strong>${escHtml(a.name)}</strong>
+                        ${a.customerUsername ? `<span style="color:#888; font-size:12px;">(Konto: ${escHtml(a.customerUsername)})</span>` : '<span style="color:#888; font-size:12px;">(Gast)</span>'}
+                        <div style="font-size:13px; color:#ccc; margin-top:4px;">${escHtml(a.concern)}</div>
+                        <div style="font-size:12px; color:#aaa; margin-top:4px;">
+                            📅 ${escHtml(a.date)} · 🕒 ${escHtml(a.time)} · 📞 <code>${escHtml(a.phone)}</code>
+                            ${a.origDate ? `<br>Ursprünglich: ${escHtml(a.origDate)} ${escHtml(a.origTime)}` : ''}
+                        </div>
+                    </div>
+                    <strong style="color:${colors[a.status] || '#aaa'};">${escHtml(a.status)}</strong>
+                </div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                    <button type="button" class="btn-white" style="padding:6px 10px; font-size:11px; background:#2ecc71; color:#fff;" onclick="appointmentAction('${a.id}', 'Angenommen')">Annehmen</button>
+                    <input type="date" id="apptDate_${a.id}" value="${escHtml(a.date)}" style="width:auto; padding:5px;">
+                    <input type="time" id="apptTime_${a.id}" value="${escHtml(a.time)}" style="width:auto; padding:5px;">
+                    <button type="button" class="btn-white" style="padding:6px 10px; font-size:11px; background:#e67e22; color:#fff;" onclick="appointmentAction('${a.id}', 'Verschoben')">Verschieben</button>
+                    <button type="button" class="btn-red" style="padding:6px 10px; font-size:11px;" onclick="appointmentAction('${a.id}', 'Abgelehnt')">Ablehnen</button>
+                    <button type="button" class="btn-nav-outline" style="padding:6px 10px; font-size:11px;" onclick="deleteAppointment('${a.id}')">🗑️</button>
+                </div>
+            </div>
+        `).join('');
+}
+
+async function appointmentAction(id, action) {
+    if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
+
+    const body = { action };
+
+    if (action === 'Verschoben') {
+        body.date = (document.getElementById(`apptDate_${id}`) || {}).value;
+        body.time = (document.getElementById(`apptTime_${id}`) || {}).value;
+        if (!body.date || !body.time) return showToast('❌ Neues Datum und Uhrzeit wählen.');
+    }
+
+    const res = await fetch(`/api/appointments/${encodeURIComponent(id)}/action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) return showToast('❌ ' + (data.error || 'Fehler'));
+
+    await fetchState();
+    showToast(`✅ Termin: ${action}`);
+}
+
+async function deleteAppointment(id) {
+    if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
+
+    const ok = await showActionConfirm('Termin löschen?', 'Der Termin wird auch im Kundenkonto entfernt.', 'Ja, löschen');
+    if (!ok) return;
+
+    await fetch(`/api/appointments/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    await fetchState();
+    showToast('🗑️ Termin gelöscht');
 }
 
 async function toggleMyOwnClock() {

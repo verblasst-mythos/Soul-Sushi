@@ -93,6 +93,7 @@
                 <div class="admin-subtabs">
                     <button type="button" class="admin-subtab active" onclick="switchAdminSub('sub-customers', this)">👑 Kunden, VIP & Hausverbot</button>
                     <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-vip-apps', this)">📋 VIP-Anträge</button>
+                    <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-appointments', this)">📅 Termine</button>
                     <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-accounts', this)">👤 Mitarbeiter-Konten</button>
                     <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-roles', this)">🎖️ Rollen</button>
                     <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-menu', this)">🍣 Speisekarte</button>
@@ -111,9 +112,18 @@
                 <!-- UNTERTAB: VIP-ANTRÄGE -->
                 <div id="sub-vip-apps" class="admin-subpanel">
                     <div class="admin-card">
-                        <h4>Eingegangene VIP-Anträge</h4>
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;"><h4 style="margin:0;">Eingegangene VIP-Anträge</h4><button type="button" class="btn-nav-outline" style="padding:6px 10px; font-size:11px;" onclick="deleteRejectedVipApps()">Alle abgelehnten löschen</button></div>
                         <p class="muted-small">Prüfe hier die Handynummern und entscheide, ob der Kunde angenommen, auf die Warteliste gesetzt oder abgelehnt wird.</p>
                         <div id="adminVipAppsList" class="admin-scroll-list" style="margin-top: 15px;"></div>
+                    </div>
+                </div>
+
+                <!-- UNTERTAB: TERMINE -->
+                <div id="sub-appointments" class="admin-subpanel">
+                    <div class="admin-card">
+                        <h4>Terminanfragen</h4>
+                        <p class="muted-small">Termine annehmen, verschieben oder ablehnen. Der Status erscheint im Kundenkonto. „In Bearbeitung“ heißt: noch nicht bearbeitet.</p>
+                        <div id="adminAppointmentsList" class="admin-scroll-list" style="margin-top: 15px;"></div>
                     </div>
                 </div>
 

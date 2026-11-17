@@ -89,6 +89,7 @@
             <a href="#vip" class="nav-link">VIP Club</a>
             <a href="#team" class="nav-link">Team</a>
             <a href="#about" class="nav-link">Über Uns</a>
+            <a href="#termin" class="nav-link" onclick="openAppointmentModal(event)">Termin vereinbaren</a>
         </nav>
 
         <div class="header-actions">
@@ -221,6 +222,10 @@
                 <p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Hausverbot:</strong> <span id="profileHausverbotBadge" style="color: #2ecc71;">Nein</span></p>
                 <p style="margin: 0; font-size: 14px;"><strong>Dein Rabatt:</strong> <span id="profileDiscount" style="color: #2ecc71;">0 %</span></p>
             </div>
+            <div style="margin-bottom: 20px;">
+                <p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Deine Termine</strong></p>
+                <div id="profileAppointments" style="max-height: 200px; overflow-y: auto;"></div>
+            </div>
             <button type="button" class="btn-red full-width" onclick="customerLogout()">ABMELDEN</button>
         </div>
     </div>
@@ -238,6 +243,30 @@
                 <div class="form-row" style="margin-top: 20px;">
                     <button type="button" class="btn-nav-outline full-width" onclick="closeVipApplyModal()">Abbrechen</button>
                     <button type="submit" class="btn-red full-width">Antrag absenden</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TERMIN VEREINBAREN -->
+    <div class="modal-backdrop" id="appointmentModal">
+        <div class="modal-box">
+            <span class="eyebrow-red">TERMIN VEREINBAREN</span>
+            <h3>Termin anfragen</h3>
+            <form onsubmit="submitAppointment(event)">
+                <label class="field-label">NAME</label>
+                <input type="text" id="apptName" required maxlength="60" placeholder="Dein Name">
+                <label class="field-label">ANLIEGEN</label>
+                <input type="text" id="apptConcern" required maxlength="400" placeholder="Worum geht es?">
+                <label class="field-label">DATUM</label>
+                <input type="date" id="apptDateInput" required>
+                <label class="field-label">UHRZEIT</label>
+                <input type="time" id="apptTimeInput" required>
+                <label class="field-label">TELEFONNUMMER</label>
+                <input type="tel" id="apptPhone" required maxlength="40" placeholder="+49 176 ...">
+                <div class="form-row" style="margin-top:20px;">
+                    <button type="button" class="btn-nav-outline full-width" onclick="closeAppointmentModal()">Abbrechen</button>
+                    <button type="submit" class="btn-red full-width">Anfragen</button>
                 </div>
             </form>
         </div>

@@ -67,6 +67,10 @@
   route('POST', '/api/customer/login', async b => wrap(await rpc('api_customer_login', { p_username: b.username, p_password: b.password })));
   route('POST', '/api/vip/apply', async b => wrap(await rpc('api_vip_apply', { p_username: b.username, p_phone: b.phone, p_tier: b.tier })));
 
+  // Termine (Kunde: anfragen / eigene ansehen)
+  route('POST', '/api/appointments', async b => wrap(await rpc('api_appointment_create', { p_username: b.username || '', p_password: b.password || '', p: b })));
+  route('POST', '/api/appointments/mine', async b => wrap(await rpc('api_my_appointments', { p_username: b.username, p_password: b.password })));
+
   // Kasse (Mitarbeiter) bzw. Online-Bestellung (Kunde)
   route('POST', '/api/orders', async b => isStaffPage && getToken() ? staff('order_create', () => b)() : wrap(await rpc('api_place_order', { p: b })));
   route('POST', '/api/reservations', async b => wrap(await rpc('api_place_reservation', { p: b })));
@@ -87,6 +91,10 @@
   route('DELETE', '/api/orders/:id', async (b, [id]) => staff('order_delete', () => ({ id }))());
   route('DELETE', '/api/reservations/:id', async (b, [id]) => staff('reservation_delete', () => ({ id }))());
   route('POST', '/api/vip/applications/:id/action', async (b, [id]) => staff('vip_action', () => ({ id, action: b.action }))());
+  route('DELETE', '/api/vip/applications/:id', async (b, [id]) => staff('vip_delete', () => ({ id }))());
+  route('POST', '/api/vip/applications-delete-rejected', async () => staff('vip_delete_rejected', () => ({}))());
+  route('POST', '/api/appointments/:id/action', async (b, [id]) => staff('appointment_action', () => ({ id, action: b.action, date: b.date, time: b.time }))());
+  route('DELETE', '/api/appointments/:id', async (b, [id]) => staff('appointment_delete', () => ({ id }))());
   route('PUT', '/api/admin/customer/:id', async (b, [id]) => staff('customer_update', () => Object.assign({}, b, { id }))());
   route('DELETE', '/api/admin/customer/:id', async (b, [id]) => staff('customer_delete', () => ({ id }))());
 

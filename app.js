@@ -546,6 +546,8 @@ function openCustomerAuthModal() {
 
         document.getElementById('customerProfileModal').classList.add('open');
 
+        loadMyAppointments();
+
     } else {
         document.getElementById('customerAuthModal').classList.add('open');
     }
@@ -613,6 +615,8 @@ async function handleCustomerAuth(event) {
             JSON.stringify(currentCustomer)
         );
 
+        try { sessionStorage.setItem('soulSushiPw', password); } catch (e) {}
+
         closeCustomerAuthModal();
         updateCustomerNavUI();
 
@@ -632,6 +636,8 @@ function customerLogout() {
     currentCustomer = null;
 
     sessionStorage.removeItem('soulSushiCustomer');
+
+    try { sessionStorage.removeItem('soulSushiPw'); } catch (e) {}
 
     closeCustomerAuthModal();
     updateCustomerNavUI();
@@ -683,4 +689,110 @@ function showToast(msg) {
     setTimeout(() => {
         t.style.display = 'none';
     }, 3500);
+}
+
+
+// Termine
+
+function customerPw() {
+    try { return sessionStorage.getItem('soulSushiPw') || ''; } catch (e) { return ''; }
+}
+
+function escHtml(v) {
+    return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function openAppointmentModal(event) {
+    if (event) event.preventDefault();
+
+    if (currentCustomer && currentCustomer.hasHausverbot) {
+        showToast('❌ Du hast Hausverbot und kannst keine Termine anfragen.');
+        return;
+    }
+
+    const nameEl = document.getElementById('apptName');
+    if (nameEl && !nameEl.value && currentCustomer) nameEl.value = currentCustomer.username;
+
+    const dateEl = document.getElementById('apptDateInput');
+    if (dateEl) dateEl.min = new Date().toISOString().slice(0, 10);
+
+    document.getElementById('appointmentModal').classList.add('open');
+}
+
+function closeAppointmentModal() {
+    document.getElementById('appointmentModal').classList.remove('open');
+}
+
+async function submitAppointment(event) {
+    event.preventDefault();
+
+    const body = {
+        name: document.getElementById('apptName').value.trim(),
+        concern: document.getElementById('apptConcern').value.trim(),
+        date: document.getElementById('apptDateInput').value,
+        time: document.getElementById('apptTimeInput').value,
+        phone: document.getElementById('apptPhone').value.trim()
+    };
+
+    if (currentCustomer) {
+        body.username = currentCustomer.username;
+        body.password = customerPw();
+    }
+
+    try {
+        const res = await fetch('/api/appointments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'Fehler');
+
+        closeAppointmentModal();
+        event.target.reset();
+
+        showToast(
+            data.appointment && data.appointment.customerUsername
+                ? '📅 Termin angefragt – Status siehst du in deinem Kundenkonto.'
+                : '📅 Termin angefragt! Wir melden uns telefonisch. (Mit Kundenkonto siehst du den Status online.)'
+        );
+    } catch (err) {
+        showToast('❌ ' + err.message);
+    }
+}
+
+async function loadMyAppointments() {
+    const box = document.getElementById('profileAppointments');
+    if (!box || !currentCustomer) return;
+
+    box.innerHTML = '<p style="color:#888; font-size:13px;">Lade …</p>';
+
+    try {
+        const res = await fetch('/api/appointments/mine', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: currentCustomer.username, password: customerPw() })
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'Fehler');
+
+        const colors = { 'In Bearbeitung': '#aaa', 'Angenommen': '#2ecc71', 'Abgelehnt': '#c82333', 'Verschoben': '#e67e22' };
+        const list = data.appointments || [];
+
+        box.innerHTML = list.length === 0
+            ? '<p style="color:#888; font-size:13px;">Noch keine Termine.</p>'
+            : list.map(a => `
+                <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px;">
+                    <div style="display:flex; justify-content:space-between; gap:10px;">
+                        <strong>${escHtml(a.concern)}</strong>
+                        <strong style="color:${colors[a.status] || '#aaa'}; white-space:nowrap;">${escHtml(a.status)}</strong>
+                    </div>
+                    <div style="color:#aaa; margin-top:4px;">📅 ${escHtml(a.date)} · 🕒 ${escHtml(a.time)}${a.origDate ? ` (vorher ${escHtml(a.origDate)} ${escHtml(a.origTime)})` : ''}</div>
+                </div>
+            `).join('');
+    } catch (err) {
+        box.innerHTML = `<p style="color:#c82333; font-size:13px;">${escHtml(err.message)}</p>`;
+    }
 }
