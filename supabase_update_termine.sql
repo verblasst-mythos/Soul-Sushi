@@ -17,7 +17,7 @@ begin
   return d;
 end $$;
 
--- Termin anfragen (Gast oder eingeloggter Kunde)
+-- Termin anfragen (nur eingeloggte Kunden)
 create or replace function public.api_appointment_create(p_username text, p_password text, p jsonb) returns jsonb
 language plpgsql security definer set search_path = private, public as $$
 declare d jsonb; c jsonb; r jsonb; uname text := null;
@@ -28,15 +28,15 @@ begin
     return jsonb_build_object('error', 'Bitte alle Felder ausfüllen.', 'status', 400);
   end if;
   d := private.load();
-  if coalesce(p_username, '') <> '' then
-    select e into c from jsonb_array_elements(d->'customers') e where lower(e->>'username') = lower(p_username) limit 1;
-    if c is not null and c->>'passHash' is not null and extensions.crypt(coalesce(p_password, ''), c->>'passHash') = c->>'passHash' then
-      if coalesce((c->>'hasHausverbot')::boolean, false) then
-        return jsonb_build_object('error', 'Für dieses Konto besteht ein Hausverbot.', 'status', 403);
-      end if;
-      uname := c->>'username';
-    end if;
+  -- Login Pflicht: ohne gültiges Kundenkonto kein Termin
+  select e into c from jsonb_array_elements(d->'customers') e where lower(e->>'username') = lower(coalesce(p_username, '')) limit 1;
+  if c is null or c->>'passHash' is null or extensions.crypt(coalesce(p_password, ''), c->>'passHash') <> c->>'passHash' then
+    return jsonb_build_object('error', 'Bitte logge dich ein, um einen Termin zu vereinbaren.', 'status', 401);
   end if;
+  if coalesce((c->>'hasHausverbot')::boolean, false) then
+    return jsonb_build_object('error', 'Für dieses Konto besteht ein Hausverbot.', 'status', 403);
+  end if;
+  uname := c->>'username';
   r := jsonb_build_object('id', private.now_id()::text, 'customerUsername', uname,
         'name', left(btrim(p->>'name'), 60), 'concern', left(btrim(p->>'concern'), 400),
         'date', left(p->>'date', 20), 'time', left(p->>'time', 10), 'phone', left(btrim(p->>'phone'), 40),
@@ -220,7 +220,7 @@ begin
       if e is null then
         return jsonb_build_object('error', 'Termin nicht gefunden.', 'status', 404);
       end if;
-      if p->>'action' not in ('Angenommen', 'Abgelehnt', 'Verschoben', 'In Bearbeitung') then
+      if p->>'action' not in ('Akzeptiert', 'Abgelehnt', 'Verschoben', 'In Bearbeitung') then
         return jsonb_build_object('error', 'Ungültiger Status', 'status', 400);
       end if;
       patch := jsonb_build_object('status', p->>'action', 'updatedAt', private.now_id());

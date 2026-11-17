@@ -878,7 +878,7 @@ function renderAppointments() {
     if (sig === lastApptSig && el.innerHTML) return;
     lastApptSig = sig;
 
-    const colors = { 'In Bearbeitung': '#aaa', 'Angenommen': '#2ecc71', 'Abgelehnt': '#c82333', 'Verschoben': '#e67e22' };
+    const colors = { 'In Bearbeitung': '#aaa', 'Akzeptiert': '#2ecc71', 'Abgelehnt': '#c82333', 'Verschoben': '#e67e22' };
 
     el.innerHTML = list.length === 0
         ? '<p style="color:#888;">Keine Terminanfragen.</p>'
@@ -887,7 +887,7 @@ function renderAppointments() {
                 <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
                     <div>
                         <strong>${escHtml(a.name)}</strong>
-                        ${a.customerUsername ? `<span style="color:#888; font-size:12px;">(Konto: ${escHtml(a.customerUsername)})</span>` : '<span style="color:#888; font-size:12px;">(Gast)</span>'}
+                        <span style="color:#888; font-size:12px;">(Konto: ${escHtml(a.customerUsername)})</span>
                         <div style="font-size:13px; color:#ccc; margin-top:4px;">${escHtml(a.concern)}</div>
                         <div style="font-size:12px; color:#aaa; margin-top:4px;">
                             📅 ${escHtml(a.date)} · 🕒 ${escHtml(a.time)} · 📞 <code>${escHtml(a.phone)}</code>
@@ -897,7 +897,7 @@ function renderAppointments() {
                     <strong style="color:${colors[a.status] || '#aaa'};">${escHtml(a.status)}</strong>
                 </div>
                 <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
-                    <button type="button" class="btn-white" style="padding:6px 10px; font-size:11px; background:#2ecc71; color:#fff;" onclick="appointmentAction('${a.id}', 'Angenommen')">Annehmen</button>
+                    <button type="button" class="btn-white" style="padding:6px 10px; font-size:11px; background:#2ecc71; color:#fff;" onclick="appointmentAction('${a.id}', 'Akzeptiert')">Akzeptieren</button>
                     <input type="date" id="apptDate_${a.id}" value="${escHtml(a.date)}" style="width:auto; padding:5px;">
                     <input type="time" id="apptTime_${a.id}" value="${escHtml(a.time)}" style="width:auto; padding:5px;">
                     <button type="button" class="btn-white" style="padding:6px 10px; font-size:11px; background:#e67e22; color:#fff;" onclick="appointmentAction('${a.id}', 'Verschoben')">Verschieben</button>

@@ -705,7 +705,13 @@ function escHtml(v) {
 function openAppointmentModal(event) {
     if (event) event.preventDefault();
 
-    if (currentCustomer && currentCustomer.hasHausverbot) {
+    if (!currentCustomer) {
+        showToast('🔑 Bitte logge dich zuerst ein, um einen Termin zu vereinbaren.');
+        openCustomerAuthModal();
+        return;
+    }
+
+    if (currentCustomer.hasHausverbot) {
         showToast('❌ Du hast Hausverbot und kannst keine Termine anfragen.');
         return;
     }
@@ -734,10 +740,15 @@ async function submitAppointment(event) {
         phone: document.getElementById('apptPhone').value.trim()
     };
 
-    if (currentCustomer) {
-        body.username = currentCustomer.username;
-        body.password = customerPw();
+    if (!currentCustomer) {
+        closeAppointmentModal();
+        showToast('🔑 Bitte logge dich zuerst ein.');
+        openCustomerAuthModal();
+        return;
     }
+
+    body.username = currentCustomer.username;
+    body.password = customerPw();
 
     try {
         const res = await fetch('/api/appointments', {
@@ -752,11 +763,7 @@ async function submitAppointment(event) {
         closeAppointmentModal();
         event.target.reset();
 
-        showToast(
-            data.appointment && data.appointment.customerUsername
-                ? '📅 Termin angefragt – Status siehst du in deinem Kundenkonto.'
-                : '📅 Termin angefragt! Wir melden uns telefonisch. (Mit Kundenkonto siehst du den Status online.)'
-        );
+        showToast('📅 Termin angefragt – Status siehst du in deinem Kundenkonto.');
     } catch (err) {
         showToast('❌ ' + err.message);
     }
@@ -778,7 +785,7 @@ async function loadMyAppointments() {
 
         if (!res.ok) throw new Error(data.error || 'Fehler');
 
-        const colors = { 'In Bearbeitung': '#aaa', 'Angenommen': '#2ecc71', 'Abgelehnt': '#c82333', 'Verschoben': '#e67e22' };
+        const colors = { 'In Bearbeitung': '#aaa', 'Akzeptiert': '#2ecc71', 'Abgelehnt': '#c82333', 'Verschoben': '#e67e22' };
         const list = data.appointments || [];
 
         box.innerHTML = list.length === 0
@@ -789,7 +796,9 @@ async function loadMyAppointments() {
                         <strong>${escHtml(a.concern)}</strong>
                         <strong style="color:${colors[a.status] || '#aaa'}; white-space:nowrap;">${escHtml(a.status)}</strong>
                     </div>
-                    <div style="color:#aaa; margin-top:4px;">📅 ${escHtml(a.date)} · 🕒 ${escHtml(a.time)}${a.origDate ? ` (vorher ${escHtml(a.origDate)} ${escHtml(a.origTime)})` : ''}</div>
+                    <div style="color:#aaa; margin-top:4px;">${a.status === 'Verschoben'
+                        ? `Verschoben auf <strong style="color:#e67e22;">📅 ${escHtml(a.date)} · 🕒 ${escHtml(a.time)}</strong><br>vorher: ${escHtml(a.origDate)} ${escHtml(a.origTime)}`
+                        : `📅 ${escHtml(a.date)} · 🕒 ${escHtml(a.time)}`}</div>
                 </div>
             `).join('');
     } catch (err) {
