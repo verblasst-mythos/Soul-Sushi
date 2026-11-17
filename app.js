@@ -19,6 +19,17 @@ async function fetchAppState() {
     try {
         const res = await fetch('/api/state');
         appState = await res.json();
+        const discordAnchor = document.getElementById('discordInviteAnchor');
+        if (discordAnchor) {
+            const invite = appState && appState.status ? String(appState.status.discordInvite || '').trim() : '';
+            if (invite && /^https:\/\/(discord\.gg|discord\.com\/invite)\//i.test(invite)) {
+                discordAnchor.href = invite;
+                discordAnchor.style.display = 'inline-block';
+            } else {
+                discordAnchor.removeAttribute('href');
+                discordAnchor.style.display = 'none';
+            }
+        }
         
         if (currentCustomer && appState.customers) {
             const updated = appState.customers.find(c => String(c.id) === String(currentCustomer.id));

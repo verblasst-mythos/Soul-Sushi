@@ -151,7 +151,8 @@ begin
   d := coalesce(d, '{}'::jsonb);
   return jsonb_build_object(
     'status',  jsonb_build_object('isOpen', coalesce(d->'status'->'isOpen', 'true'::jsonb),
-                                  'workload', coalesce(d->'status'->'workload', '"Niedrig"'::jsonb)),
+                                  'workload', coalesce(d->'status'->'workload', '"Niedrig"'::jsonb),
+                                  'discordInvite', coalesce(d->'status'->'discordInvite', '""'::jsonb)),
     'roles',   coalesce(d->'roles', '[]'::jsonb),
     'staff',   private.staff_public(coalesce(d->'staff', '[]'::jsonb)),
     'menu',    coalesce(d->'menu', '[]'::jsonb),
@@ -339,13 +340,21 @@ begin
       d := jsonb_set(d, '{orders}', private.arr_patch(d->'orders', p->>'id', jsonb_build_object('status', left(p->>'status', 40))));
       res := d->'orders';
 
+    when 'order_archive' then
+      d := jsonb_set(d, '{orders}', private.arr_patch(d->'orders', p->>'id', jsonb_build_object('status', 'Archiviert')));
+      res := d->'orders';
+
+    when 'order_delete' then
+      d := jsonb_set(d, '{orders}', private.arr_del(d->'orders', p->>'id'));
+      res := d->'orders';
+
     when 'reservation_delete' then
       d := jsonb_set(d, '{reservations}', private.arr_del(d->'reservations', p->>'id'));
       res := d->'reservations';
 
     when 'status' then
       patch := coalesce((select jsonb_object_agg(k, v) from jsonb_each(p) t(k, v)
-                          where k in ('isOpen', 'workload', 'discordWebhook')), '{}'::jsonb);
+                          where k in ('isOpen', 'workload', 'discordWebhook', 'discordInvite')), '{}'::jsonb);
       d := jsonb_set(d, '{status}', coalesce(d->'status', '{}'::jsonb) || patch);
       res := d->'status';
 

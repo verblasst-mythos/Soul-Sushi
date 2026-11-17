@@ -400,11 +400,15 @@ function renderAllViews() {
         document.getElementById('workloadSelect').value = appState.status.workload;
         const whInput = document.getElementById('discordWebhookInput');
         if (!whInput.value) whInput.value = appState.status.discordWebhook || '';
+        const inviteInput = document.getElementById('discordInviteInput');
+        if (inviteInput && !inviteInput.value) inviteInput.value = appState.status.discordInvite || '';
     }
 
-    document.getElementById('kitchenOrdersGrid').innerHTML = appState.orders.length === 0
+    const activeOrders = appState.orders.filter(o => o.status !== 'Archiviert');
+    const archivedOrders = appState.orders.filter(o => o.status === 'Archiviert');
+    document.getElementById('kitchenOrdersGrid').innerHTML = activeOrders.length === 0
         ? '<p style="color:#888;">Keine offenen Bestellungen.</p>'
-        : appState.orders.map(o => `
+        : activeOrders.map(o => `
             <div class="order-ticket ${o.status === 'Fertig' ? 'done' : ''}">
                 <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                     <strong>#${o.id} · ${o.table}</strong>
@@ -417,10 +421,20 @@ function renderAllViews() {
                     <strong>${o.total.toFixed(2).replace('.', ',')} €</strong>
                     ${o.status !== 'Fertig'
                         ? `<button type="button" class="btn-red" onclick="markOrderDone('${o.id}')">FERTIG</button>`
-                        : `<span style="color:var(--green-live); font-size:12px;">✓ SERVIERT</span>`}
+                        : `<button type="button" class="btn-nav-outline" onclick="archiveOrder('${o.id}')">INS ARCHIV</button>`}
                 </div>
             </div>
         `).join('');
+
+    const archiveEl = document.getElementById('archivedOrdersGrid');
+    if (archiveEl) archiveEl.innerHTML = archivedOrders.length
+        ? archivedOrders.map(o => `<div class="order-ticket done">
+            <div style="display:flex;justify-content:space-between;"><strong>#${o.id} · ${o.table}</strong><span>${o.time || ''} Uhr</span></div>
+            <p style="font-size:12px;color:#aaa;margin:8px 0;">${(o.items || []).map(i => `${i.qty}x ${i.name}`).join(' · ')}</p>
+            <strong>${Number(o.total || 0).toFixed(2).replace('.', ',')} €</strong>
+            <button type="button" class="btn-red" style="margin-top:10px;" onclick="deleteArchivedOrder('${o.id}')">ENDGÜLTIG LÖSCHEN</button>
+        </div>`).join('')
+        : '<p style="color:#888;">Das Archiv ist leer.</p>';
 
     document.getElementById('posMenuGrid').innerHTML = appState.menu.map(item => `
         <button type="button" class="pos-btn" onclick="addToPos('${item.id}')">
@@ -684,6 +698,24 @@ async function submitPosOrder() {
     await fetchState();
 }
 
+async function archiveOrder(id) {
+    if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
+    if (!confirm(`Bestellung #${id} ins Archiv verschieben?`)) return;
+    const res = await fetch(`/api/orders/${id}/archive`, { method: 'POST' });
+    if (!res.ok) { const e = await res.json(); return showToast(e.error || 'Archivieren fehlgeschlagen'); }
+    await fetchState();
+    showToast('Bestellung archiviert');
+}
+
+async function deleteArchivedOrder(id) {
+    if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
+    if (!confirm(`Bestellung #${id} endgültig löschen? Das kann nicht rückgängig gemacht werden.`)) return;
+    const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
+    if (!res.ok) { const e = await res.json(); return showToast(e.error || 'Löschen fehlgeschlagen'); }
+    await fetchState();
+    showToast('Archivierte Bestellung gelöscht');
+}
+
 async function markOrderDone(id) {
     await fetch(`/api/orders/${id}/status`, {
         method: 'POST',
@@ -722,6 +754,21 @@ async function saveWebhook() {
         body: JSON.stringify({ discordWebhook })
     });
     showToast('Webhook gespeichert');
+}
+
+async function saveDiscordInvite() {
+    if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
+    const discordInvite = document.getElementById('discordInviteInput').value.trim();
+    if (discordInvite && !/^https:\/\/(discord\.gg|discord\.com\/invite)\//i.test(discordInvite)) {
+        return showToast('Bitte einen gültigen Discord-Einladungslink eingeben.');
+    }
+    const res = await fetch('/api/status', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ discordInvite })
+    });
+    if (!res.ok) return showToast('Discord-Link konnte nicht gespeichert werden');
+    await fetchState();
+    showToast('Discord-Einladungslink gespeichert');
 }
 
 function showToast(msg) {

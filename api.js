@@ -82,6 +82,8 @@
   route('PUT', '/api/menu/:id', async (b, [id]) => staff('menu_update', () => Object.assign({}, b, { id }))());
   route('DELETE', '/api/menu/:id', async (b, [id]) => staff('menu_delete', () => ({ id }))());
   route('POST', '/api/orders/:id/status', async (b, [id]) => staff('order_status', () => ({ id, status: b.status }))());
+  route('POST', '/api/orders/:id/archive', async (b, [id]) => staff('order_archive', () => ({ id }))());
+  route('DELETE', '/api/orders/:id', async (b, [id]) => staff('order_delete', () => ({ id }))());
   route('DELETE', '/api/reservations/:id', async (b, [id]) => staff('reservation_delete', () => ({ id }))());
   route('POST', '/api/vip/applications/:id/action', async (b, [id]) => staff('vip_action', () => ({ id, action: b.action }))());
   route('PUT', '/api/admin/customer/:id', async (b, [id]) => staff('customer_update', () => Object.assign({}, b, { id }))());
