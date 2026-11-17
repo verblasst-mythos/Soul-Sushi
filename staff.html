@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOUL SUSHI — Mitarbeiter & Verwaltung</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="staff-page-body">
+
+    <!-- LOGIN SCREEN -->
+    <div id="staffLoginScreen" class="staff-login-screen">
+        <div class="login-card">
+            <div class="emblem-badge" style="width:90px; height:90px; margin:0 auto 18px;">
+                <div class="emblem-inner"><span class="emblem-kanji" style="font-size:26px;">魂</span><span class="emblem-name" style="font-size:9px;">SOUL SUSHI</span></div>
+            </div>
+            <span class="eyebrow-red" style="text-align:center;">INTERNES SYSTEM</span>
+            <h1 style="font-family:var(--font-serif); font-size:38px; text-align:center; margin-bottom:8px;">Mitarbeiter Login</h1>
+            <label class="field-label">MITARBEITER-NAME</label>
+            <input type="text" id="staffNameInput" list="staffSuggestions" placeholder="z.B. Kai Mueller" class="pin-input" style="font-size:14px; text-align:left; padding:0 14px; margin-bottom:16px;">
+            <datalist id="staffSuggestions"></datalist>
+            <label class="field-label">PERSONAL-PIN</label>
+            <input type="password" id="staffPinInput" maxlength="4" placeholder="••••" class="pin-input">
+            <button type="button" class="btn-red full-width" onclick="verifyStaffPin()">EINLOGGEN</button>
+            <a href="index.html" class="back-home-link" style="margin-top:20px;">← Zurück zur Kunden-Website</a>
+        </div>
+    </div>
+
+    <!-- WORKSPACE -->
+    <div id="staffWorkspace" class="staff-workspace" style="display:none;">
+        <header class="workspace-header">
+            <div class="ws-brand">
+                <span class="portal-badge">SOUL SUSHI OS</span>
+                <div><h2>Mitarbeiter & Betriebsportal</h2><p id="loggedInUserInfo">Angemeldet als: —</p></div>
+            </div>
+            <nav class="ws-nav">
+                <button type="button" class="ws-tab" id="tabBtnClock" onclick="switchWorkspaceTab('clock', this)">🕒 Stempeluhr</button>
+                <button type="button" class="ws-tab" id="tabBtnPhotos" onclick="switchWorkspaceTab('team-photos', this)">🖼️ Team-Bilder</button>
+                <button type="button" class="ws-tab" id="tabBtnAdmin" onclick="switchWorkspaceTab('admin', this)">🛡️ Verwaltung</button>
+                <button type="button" class="ws-tab" id="tabBtnKitchen" onclick="switchWorkspaceTab('kitchen', this)">🔥 Live-Küche</button>
+                <button type="button" class="ws-tab" id="tabBtnPos" onclick="switchWorkspaceTab('pos', this)">💳 Kasse</button>
+                <button type="button" class="ws-tab" id="tabBtnRes" onclick="switchWorkspaceTab('res', this)">📅 Reservierungen</button>
+            </nav>
+            <div class="ws-actions">
+                <a href="index.html" class="btn-nav-outline" style="text-decoration:none;">STARTSEITE</a>
+                <button type="button" class="btn-red" onclick="logoutStaff()">ABMELDEN</button>
+            </div>
+        </header>
+
+        <main class="workspace-main">
+            <section id="panel-clock" class="ws-panel">
+                <div class="clock-hero-box">
+                    <div><span class="eyebrow-red">ZEITERFASSUNG</span><h3 id="personalClockTitle">Dein Status</h3><p id="personalClockSub" style="color:#aaa; font-size:14px;">—</p></div>
+                    <button type="button" id="personalClockBtn" class="btn-red" onclick="toggleMyOwnClock()">EINSTEMPELN</button>
+                </div>
+                <div class="portal-kpi-row">
+                    <div class="kpi-card"><small>STATUS</small><strong id="kpiShopStatus">GEÖFFNET</strong></div>
+                    <div class="kpi-card"><small>IM DIENST</small><strong id="kpiActiveStaff">0 / 0</strong></div>
+                    <div class="kpi-card"><small>AUSLASTUNG</small><strong id="kpiWorkload">Hoch</strong></div>
+                    <div class="kpi-card"><small>BESTELLUNGEN</small><strong id="kpiOpenOrders">0</strong></div>
+                </div>
+                <div class="section-header-row"><h3>Alle Mitarbeiter</h3></div>
+                <div id="clockStaffGrid" class="staff-grid"></div>
+            </section>
+
+            <section id="panel-team-photos" class="ws-panel">
+                <div class="section-header-row"><h3>Team & Bilder verwalten</h3></div>
+                <div class="admin-two-col">
+                    <div class="admin-card">
+                        <h4 id="photoFormHeading">Mitarbeiter bearbeiten</h4>
+                        <input type="hidden" id="editPhotoStaffId">
+                        <label class="field-label">NAME</label><input type="text" id="photoStaffName">
+                        <label class="field-label">RANG</label><select id="photoStaffRole"></select>
+                        <label class="field-label">BILD URL</label><input type="text" id="photoStaffUrl">
+                        <button type="button" class="btn-red full-width" onclick="saveTeamPhotoChanges()">SPEICHERN</button>
+                    </div>
+                    <div class="admin-card"><h4>Vorschau</h4><div id="teamPhotoPreviewGrid" class="teamlist-cards-grid"></div></div>
+                </div>
+            </section>
+
+            <!-- VERWALTUNG (INKL. KUNDEN & VIP-ANTRÄGE) -->
+            <section id="panel-admin" class="ws-panel">
+                <div class="admin-banner">
+                    <div><span class="eyebrow-red">FÜHRUNGSEBENE</span><h3>Verwaltung & Kunden</h3></div>
+                    <span class="role-pill" id="adminRoleBadge">Führungsebene</span>
+                </div>
+
+                <div class="admin-subtabs">
+                    <button type="button" class="admin-subtab active" onclick="switchAdminSub('sub-customers', this)">👑 Kunden, VIP & Hausverbot</button>
+                    <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-vip-apps', this)">📋 VIP-Anträge</button>
+                    <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-accounts', this)">👤 Mitarbeiter-Konten</button>
+                    <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-roles', this)">🎖️ Rollen</button>
+                    <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-menu', this)">🍣 Speisekarte</button>
+                    <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-shop', this)">⚙️ Shop & Discord</button>
+                </div>
+
+                <!-- UNTERTAB: KUNDENVERWALTUNG -->
+                <div id="sub-customers" class="admin-subpanel active">
+                    <div class="admin-card">
+                        <h4>Registrierte Kunden verwalten</h4>
+                        <p class="muted-small">Lege hier fest, ob Kunden Stammkunde sind, welchen VIP-Status sie haben oder ob sie Hausverbot erhalten.</p>
+                        <div id="adminCustomersList" class="admin-scroll-list" style="margin-top: 15px;"></div>
+                    </div>
+                </div>
+
+                <!-- UNTERTAB: VIP-ANTRÄGE -->
+                <div id="sub-vip-apps" class="admin-subpanel">
+                    <div class="admin-card">
+                        <h4>Eingegangene VIP-Anträge</h4>
+                        <p class="muted-small">Prüfe hier die Handynummern und entscheide, ob der Kunde angenommen, auf die Warteliste gesetzt oder abgelehnt wird.</p>
+                        <div id="adminVipAppsList" class="admin-scroll-list" style="margin-top: 15px;"></div>
+                    </div>
+                </div>
+
+                <div id="sub-accounts" class="admin-subpanel">
+                    <div class="admin-two-col">
+                        <div class="admin-card">
+                            <h4>Mitarbeiter anlegen</h4>
+                            <label class="field-label">NAME</label><input type="text" id="newAccName">
+                            <label class="field-label">RANG</label><select id="newAccRole"></select>
+                            <label class="field-label">PIN</label><input type="text" id="newAccPin" maxlength="4">
+                            <button type="button" class="btn-red full-width" onclick="createAccount()">+ ANLEGEN</button>
+                        </div>
+                        <div class="admin-card"><h4>Bestehende Konten</h4><div id="accountsManageList" class="admin-scroll-list"></div></div>
+                    </div>
+                </div>
+
+                <div id="sub-roles" class="admin-subpanel">
+                    <div class="admin-two-col">
+                        <div class="admin-card">
+                            <h4>Rolle erstellen</h4>
+                            <label class="field-label">NAME</label><input type="text" id="newRoleName">
+                            <label class="field-label">FARBE</label><input type="color" id="newRoleColor" value="#c82333">
+                            <label style="display:flex; align-items:center; gap:10px; margin:12px 0;"><input type="checkbox" id="newRoleIsManagement"> Führungsebene</label>
+                            <button type="button" class="btn-red full-width" onclick="createNewRole()">+ ERSTELLEN</button>
+                        </div>
+                        <div class="admin-card"><h4>Rollen</h4><div id="adminRolesList" class="admin-scroll-list"></div></div>
+                    </div>
+                </div>
+
+                <div id="sub-menu" class="admin-subpanel">
+                    <div class="admin-card" style="margin-bottom:20px;">
+                        <h4 id="dishFormHeading">Gericht bearbeiten</h4>
+                        <input type="hidden" id="editDishId">
+                        <div class="form-row"><input type="text" id="dishNameInput" placeholder="Name"><input type="text" id="dishCatInput" placeholder="Kategorie"><input type="number" step="0.10" id="dishPriceInput" placeholder="Preis €"></div>
+                        <input type="text" id="dishDescInput" placeholder="Beschreibung">
+                        <button type="button" class="btn-red" onclick="saveDish()">SPEICHERN</button>
+                    </div>
+                    <div class="admin-card"><h4>Speisekarte</h4><div id="adminMenuManageList" class="admin-menu-grid"></div></div>
+                </div>
+
+                <div id="sub-shop" class="admin-subpanel">
+                    <div class="admin-two-col">
+                        <div class="admin-card">
+                            <h4>Status</h4>
+                            <button type="button" class="btn-white full-width" onclick="toggleShopOpen()">Status wechseln</button>
+                            <select id="workloadSelect" onchange="changeWorkload(this.value)"><option value="Niedrig">Niedrig</option><option value="Mittel">Mittel</option><option value="Hoch">Hoch</option></select>
+                        </div>
+                        <div class="admin-card"><h4>Discord</h4><input type="text" id="discordWebhookInput"><button type="button" class="btn-red full-width" onclick="saveWebhook()">SPEICHERN</button></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="panel-kitchen" class="ws-panel"><div class="section-header-row"><h3>Küche</h3></div><div id="kitchenOrdersGrid" class="kitchen-grid"></div></section>
+            <section id="panel-pos" class="ws-panel">
+                <div class="pos-layout">
+                    <div class="pos-menu" id="posMenuGrid"></div>
+                    <div class="pos-ticket"><h4>Tisch-Bon</h4><input type="text" id="posTableInput" value="Tisch 4"><div id="posItemsList"></div><div class="cart-total-row"><span>Summe:</span><strong id="posTotal">0,00 €</strong></div><button type="button" class="btn-red full-width" onclick="submitPosOrder()">SENDEN</button></div>
+                </div>
+            </section>
+            <section id="panel-res" class="ws-panel"><div class="section-header-row"><h3>Reservierungen</h3></div><div id="staffResList" style="margin-top:14px;"></div></section>
+        </main>
+    </div>
+
+    <!-- MODALS -->
+    <div class="modal-backdrop" id="customConfirmModal">
+        <div class="modal-box" style="max-width:440px; border-top:3px solid var(--accent-red); text-align:center;">
+            <h3>Löschen?</h3><div class="form-row"><button type="button" class="btn-nav-outline full-width" onclick="closeCustomModal('customConfirmModal')">Abbrechen</button><button type="button" class="btn-red full-width" id="confirmModalActionBtn">Löschen</button></div>
+        </div>
+    </div>
+    <div class="modal-backdrop" id="customPinModal">
+        <div class="modal-box" style="max-width:420px; border-top:3px solid var(--gold-role);">
+            <h3>PIN ändern</h3><input type="text" id="newPinModalInput" maxlength="4" class="pin-input"><div class="form-row"><button type="button" class="btn-nav-outline full-width" onclick="closeCustomModal('customPinModal')">Abbrechen</button><button type="button" class="btn-white full-width" id="pinModalSaveBtn">Speichern</button></div>
+        </div>
+    </div>
+
+    <!-- ZENTRALE BENACHRICHTIGUNG -->
+    <div class="modal-backdrop" id="centerNotificationModal">
+        <div class="modal-box" style="max-width: 520px; border-top: 4px solid var(--accent-red); text-align: center; background: #121212; padding: 40px;">
+            <span class="eyebrow-red" style="font-size: 13px; letter-spacing: 3px; margin-bottom: 12px;">🚨 NEUE RESERVIERUNG EINGETROFFEN 🚨</span>
+            <h3 id="centerAlertTitle" style="font-family: var(--font-serif); font-size: 36px; margin-bottom: 15px; color: #fff;">Tisch-Reservierung</h3>
+            <p id="centerAlertText" style="font-size: 15px; color: #ddd; line-height: 1.8; margin-bottom: 30px; white-space: pre-line; background: rgba(255,255,255,0.03); padding: 20px; border-radius: 6px;"></p>
+            <button type="button" class="btn-red full-width" style="padding: 16px; font-size: 14px;" onclick="closeCenterNotification()">VERSTANDEN & SCHLIESSEN</button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+    <script src="config.js"></script>
+    <script src="api.js"></script>
+    <script src="staff.js"></script>
+</body>
+</html>
