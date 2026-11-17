@@ -241,3 +241,27 @@ input, select { width: 100%; background: #0a0a0c; border: 1px solid var(--panel-
     .diagonal-divider { display: none; }
     .portal-kpi-row, .admin-two-col, .pos-layout, .two-col { grid-template-columns: 1fr; }
 }
+/* Schließen-Schaltfläche im Kundenprofil */
+.profile-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    color: #fff;
+    font-size: 27px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background .2s ease, border-color .2s ease;
+}
+.profile-close-btn:hover {
+    background: rgba(200,35,51,0.22);
+    border-color: var(--accent-red);
+}
+
