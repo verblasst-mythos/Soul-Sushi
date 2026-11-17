@@ -313,6 +313,7 @@ function renderAllViews() {
                             <label style="font-size:12px; display:flex; align-items:center; gap:5px; cursor:pointer; color: #c82333; font-weight: bold;">
                                 <input type="checkbox" ${c.hasHausverbot ? 'checked' : ''} onchange="updateCustomerStatus('${c.id}', '${c.vipStatus}', ${c.isStammkunde}, this.checked)"> Hausverbot
                             </label>
+                            <button type="button" class="btn-red" style="padding:7px 11px; white-space:nowrap;" onclick="deleteCustomer('${c.id}', ${JSON.stringify(c.username).replace(/</g, '\u003c')})">Konto löschen</button>
                         </div>
                     </div>
                 `).join('');
@@ -485,6 +486,16 @@ function renderAllViews() {
                 </div>
             </div>
         `).join('');
+}
+
+async function deleteCustomer(id, username) {
+    if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
+    const ok = await showActionConfirm('Kundenkonto endgültig löschen?', `Das Konto von ${username} wird dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.`, 'Konto löschen');
+    if (!ok) return;
+    const res = await fetch(`/api/admin/customer/${id}`, { method: 'DELETE' });
+    if (!res.ok) { const err = await res.json().catch(() => ({})); return showToast('❌ ' + (err.error || 'Konto konnte nicht gelöscht werden')); }
+    await fetchState();
+    showToast(`🗑️ Kundenkonto von ${username} gelöscht`);
 }
 
 async function updateCustomerStatus(id, vipStatus, isStammkunde, hasHausverbot) {
@@ -706,6 +717,11 @@ function setPosQty(id, value) {
     renderPosTicket();
 }
 
+function removePosItem(id) {
+    posCart = posCart.filter(item => String(item.id) !== String(id));
+    renderPosTicket();
+}
+
 function renderPosTicket() {
     let total = 0;
     document.getElementById('posItemsList').innerHTML = posCart.map(i => {
@@ -714,6 +730,7 @@ function renderPosTicket() {
             <span style="flex:1;">${i.name}<small style="display:block;color:#999;">${Number(i.price).toFixed(2).replace('.', ',')} € / Stück</small></span>
             <label style="display:flex;align-items:center;gap:6px;">Anzahl <input aria-label="Anzahl ${i.name}" type="number" min="1" max="999" value="${i.qty}" onchange="setPosQty('${i.id}', this.value)" style="width:64px;padding:7px;background:#181818;color:#fff;border:1px solid #555;border-radius:6px;"></label>
             <strong style="min-width:75px;text-align:right;">${(i.price * i.qty).toFixed(2).replace('.', ',')} €</strong>
+            <button type="button" aria-label="${i.name} vom Bon entfernen" title="Vom Bon entfernen" onclick="removePosItem('${i.id}')" style="border:1px solid #8b3434;background:#351b1b;color:#ffb4b4;border-radius:7px;padding:7px 10px;cursor:pointer;font-size:16px;line-height:1;">✕</button>
         </div>`;
     }).join('');
     document.getElementById('posTotal').textContent = `${total.toFixed(2).replace('.', ',')} €`;

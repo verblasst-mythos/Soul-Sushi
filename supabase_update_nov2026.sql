@@ -126,6 +126,10 @@ begin
       end if;
       res := private.customer_view(d->'customers');
 
+    when 'customer_delete' then
+      d := jsonb_set(d, '{customers}', private.arr_del(d->'customers', p->>'id'));
+      res := private.customer_view(d->'customers');
+
     when 'vip_action' then
       e := private.arr_get(d->'vipApplications', p->>'id');
       if e is not null then
