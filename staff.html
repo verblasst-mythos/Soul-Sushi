@@ -36,6 +36,7 @@
                 <div><h2>Mitarbeiter & Betriebsportal</h2><p id="loggedInUserInfo">Angemeldet als: —</p></div>
             </div>
             <nav class="ws-nav">
+                <button type="button" class="ws-tab" id="tabBtnVip" onclick="switchWorkspaceTab('vip-readonly', this)">👑 VIP-Übersicht</button>
                 <button type="button" class="ws-tab" id="tabBtnClock" onclick="switchWorkspaceTab('clock', this)">🕒 Stempeluhr</button>
                 <button type="button" class="ws-tab" id="tabBtnPhotos" onclick="switchWorkspaceTab('team-photos', this)">🖼️ Team-Bilder</button>
                 <button type="button" class="ws-tab" id="tabBtnAdmin" onclick="switchWorkspaceTab('admin', this)">🛡️ Verwaltung</button>
@@ -53,7 +54,7 @@
             <section id="panel-clock" class="ws-panel">
                 <div class="clock-hero-box">
                     <div><span class="eyebrow-red">ZEITERFASSUNG</span><h3 id="personalClockTitle">Dein Status</h3><p id="personalClockSub" style="color:#aaa; font-size:14px;">—</p></div>
-                    <button type="button" id="personalClockBtn" class="btn-red" onclick="toggleMyOwnClock()">EINSTEMPELN</button>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;"><button type="button" class="btn-nav-outline" onclick="toggleShopOpen()">LADEN ÖFFNEN / SCHLIESSEN</button><button type="button" id="personalClockBtn" class="btn-red" onclick="toggleMyOwnClock()">EINSTEMPELN</button></div>
                 </div>
                 <div class="portal-kpi-row">
                     <div class="kpi-card"><small>STATUS</small><strong id="kpiShopStatus">GEÖFFNET</strong></div>
@@ -64,6 +65,8 @@
                 <div class="section-header-row"><h3>Alle Mitarbeiter</h3></div>
                 <div id="clockStaffGrid" class="staff-grid"></div>
             </section>
+
+            <section id="panel-vip-readonly" class="ws-panel"><div class="section-header-row"><h3>VIP-Kunden · Nur Ansicht</h3></div><p class="muted-small">Alle Mitarbeiter können die VIP-Übersicht ansehen. Änderungen sind hier nicht möglich.</p><div id="staffVipReadOnlyList" class="admin-scroll-list"></div></section>
 
             <section id="panel-team-photos" class="ws-panel">
                 <div class="section-header-row"><h3>Team & Bilder verwalten</h3></div>
@@ -187,7 +190,7 @@
     <!-- MODALS -->
     <div class="modal-backdrop" id="customConfirmModal">
         <div class="modal-box" style="max-width:440px; border-top:3px solid var(--accent-red); text-align:center;">
-            <h3>Löschen?</h3><div class="form-row"><button type="button" class="btn-nav-outline full-width" onclick="closeCustomModal('customConfirmModal')">Abbrechen</button><button type="button" class="btn-red full-width" id="confirmModalActionBtn">Löschen</button></div>
+            <h3 id="confirmModalTitle">Aktion bestätigen</h3><p id="confirmModalMessage" style="color:#bbb;line-height:1.6;margin:12px 0 22px;"></p><div class="form-row"><button type="button" class="btn-nav-outline full-width" id="confirmModalCancelBtn">Abbrechen</button><button type="button" class="btn-red full-width" id="confirmModalActionBtn">Bestätigen</button></div>
         </div>
     </div>
     <div class="modal-backdrop" id="customPinModal">

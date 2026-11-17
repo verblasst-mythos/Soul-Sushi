@@ -5,7 +5,7 @@ let uploadedPhotoBase64 = '';
 let lastKnownResCount = 0;
 let lastKnownOrderCount = 0;
 
-const MANAGEMENT_ONLY_TABS = ['clock', 'team-photos', 'admin'];
+const MANAGEMENT_ONLY_TABS = ['team-photos', 'admin'];
 
 document.addEventListener('DOMContentLoaded', async () => {
     await fetchState();
@@ -135,7 +135,7 @@ function enterWorkspace() {
     const photosBtn = document.getElementById('tabBtnPhotos');
     const adminBtn = document.getElementById('tabBtnAdmin');
 
-    if (clockBtn) clockBtn.style.display = canManage ? 'inline-block' : 'none';
+    if (clockBtn) clockBtn.style.display = 'inline-block';
     if (photosBtn) photosBtn.style.display = canManage ? 'inline-block' : 'none';
     if (adminBtn) adminBtn.style.display = canManage ? 'inline-block' : 'none';
 
@@ -143,11 +143,7 @@ function enterWorkspace() {
 
     renderAllViews();
 
-    if (canManage) {
-        switchWorkspaceTab('clock', clockBtn);
-    } else {
-        switchWorkspaceTab('kitchen', document.getElementById('tabBtnKitchen'));
-    }
+    switchWorkspaceTab('clock', clockBtn);
 }
 
 function logoutStaff() {
@@ -404,6 +400,37 @@ function renderAllViews() {
         if (inviteInput && !inviteInput.value) inviteInput.value = appState.status.discordInvite || '';
     }
 
+    // Stempeluhr: alle Ränge sehen den Dienststatus, können aber nur sich selbst stempeln.
+    const activeCountForAll = appState.staff.filter(s => s.onDuty).length;
+    const shopStatus = document.getElementById('kpiShopStatus');
+    const activeKpi = document.getElementById('kpiActiveStaff');
+    const workloadKpi = document.getElementById('kpiWorkload');
+    const ordersKpi = document.getElementById('kpiOpenOrders');
+    if (shopStatus) shopStatus.textContent = appState.status.isOpen ? 'GEÖFFNET' : 'GESCHLOSSEN';
+    if (activeKpi) activeKpi.textContent = `${activeCountForAll} / ${appState.staff.length}`;
+    if (workloadKpi) workloadKpi.textContent = appState.status.workload || '—';
+    if (ordersKpi) ordersKpi.textContent = appState.orders.filter(o => !['Fertig', 'Archiviert'].includes(o.status)).length;
+    const myClockTitle = document.getElementById('personalClockTitle');
+    const myClockSub = document.getElementById('personalClockSub');
+    const myClockBtn = document.getElementById('personalClockBtn');
+    if (myClockTitle && myClockSub && myClockBtn) {
+        myClockTitle.textContent = `${currentUser.name} — ${currentUser.onDuty ? 'EINGESTEMPELT' : 'AUSGESTEMPELT'}`;
+        myClockSub.textContent = currentUser.onDuty ? `Im Dienst seit ${currentUser.clockIn} Uhr (${currentUser.role})` : `Du bist aktuell nicht im Dienst (${currentUser.role}).`;
+        myClockBtn.textContent = currentUser.onDuty ? 'JETZT AUSSTEMPELN' : 'JETZT EINSTEMPELN';
+        myClockBtn.className = currentUser.onDuty ? 'btn-red' : 'btn-white';
+    }
+    const clockGrid = document.getElementById('clockStaffGrid');
+    if (clockGrid) clockGrid.innerHTML = appState.staff.map(s => `
+        <div class="staff-card"><div><span style="font-size:10px;font-weight:700;color:${getRoleColor(s.role)};text-transform:uppercase;">${s.role}</span>
+        <strong style="display:block;font-size:16px;margin-top:2px;">${s.name}</strong>
+        <span style="font-size:12px;color:#aaa;">${s.onDuty ? `🟢 Im Dienst seit ${s.clockIn} Uhr` : '⚫ Nicht im Dienst'}</span></div>
+        ${String(s.id) === String(currentUser.id) ? `<button type="button" class="${s.onDuty ? 'btn-red' : 'btn-white'}" onclick="toggleMyOwnClock()">${s.onDuty ? 'AUSSTEMPELN' : 'EINSTEMPELN'}</button>` : (isManagementUser(currentUser) ? `<button type="button" class="${s.onDuty ? 'btn-red' : 'btn-white'}" onclick="toggleStaffDuty('${s.id}')">${s.onDuty ? 'AUSSTEMPELN' : 'EINSTEMPELN'}</button>` : '')}</div>`).join('');
+    const vipReadOnly = document.getElementById('staffVipReadOnlyList');
+    if (vipReadOnly) {
+        const vipCustomers = (appState.customers || []).filter(c => c.vipStatus && c.vipStatus !== 'Kein');
+        vipReadOnly.innerHTML = vipCustomers.length ? vipCustomers.map(c => `<div class="list-item-card"><strong>${c.username}</strong><span>${c.vipStatus}</span></div>`).join('') : '<p style="color:#888;">Aktuell sind keine VIP-Kunden eingetragen.</p>';
+    }
+
     const activeOrders = appState.orders.filter(o => o.status !== 'Archiviert');
     const archivedOrders = appState.orders.filter(o => o.status === 'Archiviert');
     document.getElementById('kitchenOrdersGrid').innerHTML = activeOrders.length === 0
@@ -483,12 +510,12 @@ async function handleVipAppAction(id, action) {
 }
 
 async function toggleMyOwnClock() {
-    if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
     if (currentUser) await toggleStaffDuty(currentUser.id);
 }
 
 async function toggleStaffDuty(id) {
-    if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
+    if (!currentUser) return;
+    if (String(id) !== String(currentUser.id) && !isManagementUser(currentUser)) return showToast('❌ Du kannst nur dich selbst einstempeln.');
     await fetch('/api/staff/toggle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -576,8 +603,12 @@ function promptChangePin(id, name) {
 function deleteAccount(id, name) {
     if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
     const modal = document.getElementById('customConfirmModal');
+    document.getElementById('confirmModalTitle').textContent = `Mitarbeiterkonto löschen?`;
+    document.getElementById('confirmModalMessage').textContent = `Das Konto von ${name} wird endgültig entfernt.`;
+    document.getElementById('confirmModalActionBtn').textContent = 'Konto löschen';
     modal.classList.add('open');
 
+    document.getElementById('confirmModalCancelBtn').onclick = () => closeCustomModal('customConfirmModal');
     document.getElementById('confirmModalActionBtn').onclick = async () => {
         await fetch(`/api/staff/${id}`, { method: 'DELETE' });
         closeCustomModal('customConfirmModal');
@@ -667,12 +698,22 @@ function addToPos(id) {
     renderPosTicket();
 }
 
+function setPosQty(id, value) {
+    const item = posCart.find(i => String(i.id) === String(id));
+    if (!item) return;
+    const qty = Math.max(1, Math.min(999, Math.floor(Number(value) || 1)));
+    item.qty = qty;
+    renderPosTicket();
+}
+
 function renderPosTicket() {
     let total = 0;
     document.getElementById('posItemsList').innerHTML = posCart.map(i => {
         total += i.price * i.qty;
-        return `<div style="display:flex; justify-content:space-between; font-size:13px; margin:6px 0;">
-            <span>${i.qty}x ${i.name}</span><span>${(i.price * i.qty).toFixed(2)} €</span>
+        return `<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:13px; margin:8px 0;">
+            <span style="flex:1;">${i.name}<small style="display:block;color:#999;">${Number(i.price).toFixed(2).replace('.', ',')} € / Stück</small></span>
+            <label style="display:flex;align-items:center;gap:6px;">Anzahl <input aria-label="Anzahl ${i.name}" type="number" min="1" max="999" value="${i.qty}" onchange="setPosQty('${i.id}', this.value)" style="width:64px;padding:7px;background:#181818;color:#fff;border:1px solid #555;border-radius:6px;"></label>
+            <strong style="min-width:75px;text-align:right;">${(i.price * i.qty).toFixed(2).replace('.', ',')} €</strong>
         </div>`;
     }).join('');
     document.getElementById('posTotal').textContent = `${total.toFixed(2).replace('.', ',')} €`;
@@ -698,9 +739,26 @@ async function submitPosOrder() {
     await fetchState();
 }
 
+function showActionConfirm(title, message, actionLabel) {
+    return new Promise(resolve => {
+        const modal = document.getElementById('customConfirmModal');
+        if (!modal) return resolve(window.confirm(`${title}\n${message}`));
+        document.getElementById('confirmModalTitle').textContent = title;
+        document.getElementById('confirmModalMessage').textContent = message;
+        const actionBtn = document.getElementById('confirmModalActionBtn');
+        actionBtn.textContent = actionLabel;
+        modal.classList.add('open');
+        const cancelBtn = document.getElementById('confirmModalCancelBtn');
+        const finish = value => { modal.classList.remove('open'); actionBtn.onclick = null; cancelBtn.onclick = null; resolve(value); };
+        actionBtn.onclick = () => finish(true);
+        cancelBtn.onclick = () => finish(false);
+    });
+}
+
 async function archiveOrder(id) {
     if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
-    if (!confirm(`Bestellung #${id} ins Archiv verschieben?`)) return;
+    const ok = await showActionConfirm(`Bestellung #${id} archivieren?`, 'Die Bestellung wird aus der Live-Küche ins Archiv verschoben.', 'Ins Archiv');
+    if (!ok) return;
     const res = await fetch(`/api/orders/${id}/archive`, { method: 'POST' });
     if (!res.ok) { const e = await res.json(); return showToast(e.error || 'Archivieren fehlgeschlagen'); }
     await fetchState();
@@ -709,7 +767,8 @@ async function archiveOrder(id) {
 
 async function deleteArchivedOrder(id) {
     if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
-    if (!confirm(`Bestellung #${id} endgültig löschen? Das kann nicht rückgängig gemacht werden.`)) return;
+    const ok = await showActionConfirm(`Bestellung #${id} endgültig löschen?`, 'Diese Aktion kann nicht rückgängig gemacht werden.', 'Endgültig löschen');
+    if (!ok) return;
     const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
     if (!res.ok) { const e = await res.json(); return showToast(e.error || 'Löschen fehlgeschlagen'); }
     await fetchState();
@@ -726,13 +785,11 @@ async function markOrderDone(id) {
 }
 
 async function toggleShopOpen() {
-    if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
-    await fetch('/api/status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isOpen: !appState.status.isOpen })
-    });
+    if (!currentUser) return;
+    const res = await fetch('/api/shop/toggle', { method: 'POST' });
+    if (!res.ok) { const e = await res.json(); return showToast(e.error || 'Status konnte nicht geändert werden'); }
     await fetchState();
+    showToast(appState.status.isOpen ? 'Der Laden ist jetzt geöffnet.' : 'Der Laden ist jetzt geschlossen.');
 }
 
 async function changeWorkload(workload) {

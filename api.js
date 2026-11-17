@@ -72,6 +72,7 @@
   route('POST', '/api/reservations', async b => wrap(await rpc('api_place_reservation', { p: b })));
 
   route('POST', '/api/status', async b => staff('status', () => b)());
+  route('POST', '/api/shop/toggle', async () => staff('shop_toggle', () => ({}))());
   route('POST', '/api/staff/toggle', async b => staff('toggle', () => ({ id: String(b.id) }))());
   route('POST', '/api/staff/add', async b => staff('staff_add', () => b)());
   route('PUT', '/api/staff/:id', async (b, [id]) => staff('staff_update', () => Object.assign({}, b, { id }))());
