@@ -96,6 +96,7 @@
                     <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-appointments', this)">📅 Termine</button>
                     <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-accounts', this)">👤 Mitarbeiter-Konten</button>
                     <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-roles', this)">🎖️ Rollen</button>
+                    <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-newsjobs', this)">📰 News & Jobs</button>
                     <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-menu', this)">🍣 Speisekarte</button>
                     <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-shop', this)">⚙️ Shop & Discord</button>
                 </div>
@@ -150,6 +151,39 @@
                             <button type="button" class="btn-red full-width" onclick="createNewRole()">+ ERSTELLEN</button>
                         </div>
                         <div class="admin-card"><h4>Rollen</h4><div id="adminRolesList" class="admin-scroll-list"></div></div>
+                    </div>
+                </div>
+
+                <div id="sub-newsjobs" class="admin-subpanel">
+                    <div class="admin-card" style="margin-bottom:20px;">
+                        <h4>Bewerbungsphase</h4>
+                        <p id="applyStateText" style="margin:6px 0 12px;"></p>
+                        <button type="button" class="btn-white full-width" onclick="toggleApplications()">Bewerbungsphase umschalten</button>
+                    </div>
+                    <div class="admin-two-col">
+                        <div>
+                            <div class="admin-card" style="margin-bottom:20px;">
+                                <h4 id="newsFormHeading">News verfassen</h4>
+                                <input type="hidden" id="editNewsId">
+                                <input type="text" id="newsTitleInput" placeholder="Titel" maxlength="120">
+                                <textarea id="newsTextInput" rows="4" placeholder="Text" maxlength="1500"></textarea>
+                                <label class="field-label"><input type="checkbox" id="newsPinnedInput"> Oben anpinnen</label>
+                                <button type="button" class="btn-red full-width" onclick="saveNews()">VERÖFFENTLICHEN</button>
+                            </div>
+                            <div class="admin-card"><h4>News</h4><div id="adminNewsList" class="admin-scroll-list"></div></div>
+                        </div>
+                        <div>
+                            <div class="admin-card" style="margin-bottom:20px;">
+                                <h4 id="jobFormHeading">Stelle ausschreiben</h4>
+                                <input type="hidden" id="editJobId">
+                                <input type="text" id="jobTitleInput" placeholder="Stellenbezeichnung" maxlength="80">
+                                <input type="text" id="jobTypeInput" placeholder="Art (z. B. Vollzeit, Aushilfe)" maxlength="40">
+                                <textarea id="jobDescInput" rows="3" placeholder="Aufgaben" maxlength="800"></textarea>
+                                <textarea id="jobReqInput" rows="3" placeholder="Voraussetzungen" maxlength="800"></textarea>
+                                <button type="button" class="btn-red full-width" onclick="saveJob()">SPEICHERN</button>
+                            </div>
+                            <div class="admin-card"><h4>Stellen</h4><div id="adminJobsList" class="admin-scroll-list"></div></div>
+                        </div>
                     </div>
                 </div>
 

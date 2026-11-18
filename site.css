@@ -291,3 +291,19 @@ body {
 .fp-legend i.small { opacity: .45; }
 @media (prefers-reduced-motion: no-preference) { .fp-sel .fp-top { animation: fpPop .35s var(--ease); } @keyframes fpPop { 50% { filter: drop-shadow(0 0 8px rgba(216,57,44,.8)); } } }
 .fp-table[data-id^="B"] .fp-id { font-size: 8px; }
+
+/* News & Jobs */
+.news-grid, .jobs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+.news-card, .job-card { background: var(--ink-2); border: 1px solid var(--line); border-radius: 4px; padding: 22px; display: flex; flex-direction: column; gap: 10px; transition: border-color .3s, transform .45s var(--ease); }
+.news-card:hover, .job-card:hover { border-color: var(--line-strong); transform: translateY(-3px); }
+.news-card.pinned { border-color: var(--lantern, #f0b866); }
+.news-card h3, .job-card h3 { margin: 0; font-family: 'Shippori Mincho', serif; font-size: 1.3rem; text-transform: none; }
+.job-card h4 { margin: 6px 0 0; font-size: .85rem; text-transform: none; color: var(--mist, #a3a2b0); }
+.news-card p, .job-card p { margin: 0; line-height: 1.6; color: var(--washi, #f1e9da); opacity: .85; }
+.news-meta { font-size: .8rem; color: var(--mist, #a3a2b0); text-transform: none; }
+.job-card .btn-red { align-self: flex-start; margin-top: auto; text-decoration: none; }
+.job-hint { margin-top: auto; font-size: .85rem; color: var(--mist, #a3a2b0); }
+.apply-banner { display: flex; flex-direction: column; gap: 4px; padding: 16px 20px; border-radius: 4px; margin-bottom: 20px; border: 1px solid; }
+.apply-banner.open { border-color: var(--matcha, #86b99a); background: rgba(134,185,154,.1); }
+.apply-banner.closed { border-color: var(--lacquer, #d8392c); background: rgba(216,57,44,.08); }
+.apply-banner span { font-size: .9rem; opacity: .8; }

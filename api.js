@@ -84,6 +84,12 @@
   route('DELETE', '/api/staff/:id', async (b, [id]) => staff('staff_delete', () => ({ id }))());
   route('POST', '/api/roles/add', async b => staff('role_add', () => b)());
   route('DELETE', '/api/roles/:id', async (b, [id]) => staff('role_delete', () => ({ id }))());
+  route('POST', '/api/news/add', async b => staff('news_add', () => b)());
+  route('PUT', '/api/news/:id', async (b, [id]) => staff('news_update', () => Object.assign({}, b, { id }))());
+  route('DELETE', '/api/news/:id', async (b, [id]) => staff('news_delete', () => ({ id }))());
+  route('POST', '/api/jobs/add', async b => staff('job_add', () => b)());
+  route('PUT', '/api/jobs/:id', async (b, [id]) => staff('job_update', () => Object.assign({}, b, { id }))());
+  route('DELETE', '/api/jobs/:id', async (b, [id]) => staff('job_delete', () => ({ id }))());
   route('POST', '/api/menu/add', async b => staff('menu_add', () => b)());
   route('PUT', '/api/menu/:id', async (b, [id]) => staff('menu_update', () => Object.assign({}, b, { id }))());
   route('DELETE', '/api/menu/:id', async (b, [id]) => staff('menu_delete', () => ({ id }))());

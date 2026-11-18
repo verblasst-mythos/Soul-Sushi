@@ -108,6 +108,7 @@ function renderFrontend() {
 
     renderMenu();
     renderTeam();
+    renderNewsAndJobs();
     updateCartCount();
 }
 
@@ -793,6 +794,52 @@ async function loadMyAppointments() {
             `).join('');
     } catch (err) {
         box.innerHTML = `<p style="color:#c82333; font-size:13px;">${escHtml(err.message)}</p>`;
+    }
+}
+
+function renderNewsAndJobs() {
+    const news = (appState.news || []).slice().sort((a, b) =>
+        (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || Number(b.createdAt || 0) - Number(a.createdAt || 0));
+    const nSec = document.getElementById('news'), nGrid = document.getElementById('newsGrid');
+    if (nSec && nGrid) {
+        nSec.hidden = news.length === 0;
+        const sig = JSON.stringify(news);
+        if (nGrid.dataset.sig !== sig) {
+            nGrid.dataset.sig = sig;
+            nGrid.innerHTML = news.map(n => {
+                const d = n.createdAt ? new Date(Number(n.createdAt)).toLocaleDateString('de-DE') : '';
+                return `<article class="news-card${n.pinned ? ' pinned' : ''}">
+                    <div class="news-meta">${n.pinned ? '📌 Angepinnt' : escHtml(d)}</div>
+                    <h3>${escHtml(n.title)}</h3>
+                    <p>${escHtml(n.text).replace(/\n/g, '<br>')}</p></article>`;
+            }).join('');
+        }
+    }
+    const open = !!(appState.status && appState.status.applicationsOpen);
+    const banner = document.getElementById('applyBanner'), jGrid = document.getElementById('jobsGrid');
+    const invite = String((appState.status && appState.status.discordInvite) || '').trim();
+    const jobs = appState.jobs || [];
+    if (banner) {
+        banner.className = 'apply-banner ' + (open ? 'open' : 'closed');
+        banner.innerHTML = open
+            ? '<strong>Bewerbungsphase offen</strong><span>Wir suchen Verstärkung – bewirb dich jetzt.</span>'
+            : '<strong>Bewerbungsphase geschlossen</strong><span>Aktuell nehmen wir keine Bewerbungen an. Schau bald wieder vorbei.</span>';
+    }
+    if (jGrid) {
+        const sig = JSON.stringify([jobs, open, invite]);
+        if (jGrid.dataset.sig === sig) return;
+        jGrid.dataset.sig = sig;
+        jGrid.innerHTML = jobs.length ? jobs.map(j => `<article class="job-card">
+            <div class="news-meta">${escHtml(j.type || '')}</div>
+            <h3>${escHtml(j.title)}</h3>
+            ${j.description ? `<p>${escHtml(j.description).replace(/\n/g, '<br>')}</p>` : ''}
+            ${j.requirements ? `<h4>Voraussetzungen</h4><p>${escHtml(j.requirements).replace(/\n/g, '<br>')}</p>` : ''}
+            ${open
+                ? (/^https?:\/\//.test(invite)
+                    ? `<a class="btn-red" href="${escHtml(invite)}" target="_blank" rel="noopener">Jetzt bewerben</a>`
+                    : '<span class="job-hint">Bewirb dich direkt im Spiel beim Team.</span>')
+                : '<span class="job-hint">Bewerbung aktuell nicht möglich</span>'}
+        </article>`).join('') : '<p class="job-hint">Derzeit sind keine Stellen ausgeschrieben.</p>';
     }
 }
 

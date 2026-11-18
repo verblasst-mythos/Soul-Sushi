@@ -454,6 +454,7 @@ function renderAllViews() {
         }
 
         renderAppointments();
+        renderNewsJobsAdmin();
 
         document.getElementById('accountsManageList').innerHTML =
             appState.staff.map(s => {
@@ -1165,6 +1166,101 @@ function editDish(id) {
     document.getElementById('dishCatInput').value = d.category;
     document.getElementById('dishPriceInput').value = d.price;
     document.getElementById('dishDescInput').value = d.desc;
+}
+
+function renderNewsJobsAdmin() {
+    const open = !!(appState.status && appState.status.applicationsOpen);
+    const t = document.getElementById('applyStateText');
+    if (t) t.innerHTML = 'Aktuell: <strong>' + (open ? 'OFFEN' : 'GESCHLOSSEN') + '</strong>';
+    const nl = document.getElementById('adminNewsList'), jl = document.getElementById('adminJobsList');
+    const news = (appState.news || []), jobs = (appState.jobs || []);
+    if (nl && nl.dataset.sig !== JSON.stringify(news)) {
+        nl.dataset.sig = JSON.stringify(news);
+        nl.innerHTML = news.length ? news.map(n => `<div class="admin-row" style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);">
+            <div><strong>${n.pinned ? '📌 ' : ''}${escHtml(n.title)}</strong></div>
+            <div style="display:flex;gap:6px;"><button type="button" class="btn-nav-outline" style="padding:6px 10px;font-size:11px;" onclick="editNews('${n.id}')">✏️</button>
+            <button type="button" class="btn-nav-outline" style="padding:6px 10px;font-size:11px;" onclick="deleteNews('${n.id}')">🗑️</button></div></div>`).join('') : '<p>Keine News.</p>';
+    }
+    if (jl && jl.dataset.sig !== JSON.stringify(jobs)) {
+        jl.dataset.sig = JSON.stringify(jobs);
+        jl.innerHTML = jobs.length ? jobs.map(j => `<div class="admin-row" style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);">
+            <div><strong>${escHtml(j.title)}</strong> <small>${escHtml(j.type || '')}</small></div>
+            <div style="display:flex;gap:6px;"><button type="button" class="btn-nav-outline" style="padding:6px 10px;font-size:11px;" onclick="editJob('${j.id}')">✏️</button>
+            <button type="button" class="btn-nav-outline" style="padding:6px 10px;font-size:11px;" onclick="deleteJob('${j.id}')">🗑️</button></div></div>`).join('') : '<p>Keine Stellen.</p>';
+    }
+}
+
+const _json = { 'Content-Type': 'application/json' };
+
+async function toggleApplications() {
+    if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
+    const next = !(appState.status && appState.status.applicationsOpen);
+    await fetch('/api/status', { method: 'POST', headers: _json, body: JSON.stringify({ applicationsOpen: next }) });
+    await fetchState();
+    showToast(next ? '✅ Bewerbungsphase offen' : '✅ Bewerbungsphase geschlossen');
+}
+
+async function saveNews() {
+    if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
+    const id = document.getElementById('editNewsId').value;
+    const title = document.getElementById('newsTitleInput').value.trim();
+    if (!title) return showToast('Titel angeben');
+    const body = { title, text: document.getElementById('newsTextInput').value.trim(), pinned: document.getElementById('newsPinnedInput').checked };
+    await fetch(id ? `/api/news/${id}` : '/api/news/add', { method: id ? 'PUT' : 'POST', headers: _json, body: JSON.stringify(body) });
+    ['editNewsId', 'newsTitleInput', 'newsTextInput'].forEach(i => document.getElementById(i).value = '');
+    document.getElementById('newsPinnedInput').checked = false;
+    document.getElementById('newsFormHeading').textContent = 'News verfassen';
+    await fetchState();
+    showToast('✅ Gespeichert');
+}
+
+function editNews(id) {
+    const n = (appState.news || []).find(x => x.id === id);
+    if (!n) return;
+    document.getElementById('editNewsId').value = n.id;
+    document.getElementById('newsTitleInput').value = n.title;
+    document.getElementById('newsTextInput').value = n.text || '';
+    document.getElementById('newsPinnedInput').checked = !!n.pinned;
+    document.getElementById('newsFormHeading').textContent = 'News bearbeiten';
+}
+
+async function deleteNews(id) {
+    if (!await showActionConfirm('News löschen', 'Diese News wirklich löschen?', 'Löschen')) return;
+    await fetch(`/api/news/${id}`, { method: 'DELETE' });
+    await fetchState();
+    showToast('🗑️ Gelöscht');
+}
+
+async function saveJob() {
+    if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
+    const id = document.getElementById('editJobId').value;
+    const title = document.getElementById('jobTitleInput').value.trim();
+    if (!title) return showToast('Stellenbezeichnung angeben');
+    const body = { title, type: document.getElementById('jobTypeInput').value.trim(),
+        description: document.getElementById('jobDescInput').value.trim(), requirements: document.getElementById('jobReqInput').value.trim() };
+    await fetch(id ? `/api/jobs/${id}` : '/api/jobs/add', { method: id ? 'PUT' : 'POST', headers: _json, body: JSON.stringify(body) });
+    ['editJobId', 'jobTitleInput', 'jobTypeInput', 'jobDescInput', 'jobReqInput'].forEach(i => document.getElementById(i).value = '');
+    document.getElementById('jobFormHeading').textContent = 'Stelle ausschreiben';
+    await fetchState();
+    showToast('✅ Gespeichert');
+}
+
+function editJob(id) {
+    const j = (appState.jobs || []).find(x => x.id === id);
+    if (!j) return;
+    document.getElementById('editJobId').value = j.id;
+    document.getElementById('jobTitleInput').value = j.title;
+    document.getElementById('jobTypeInput').value = j.type || '';
+    document.getElementById('jobDescInput').value = j.description || '';
+    document.getElementById('jobReqInput').value = j.requirements || '';
+    document.getElementById('jobFormHeading').textContent = 'Stelle bearbeiten';
+}
+
+async function deleteJob(id) {
+    if (!await showActionConfirm('Stelle löschen', 'Diese Stellenausschreibung wirklich löschen?', 'Löschen')) return;
+    await fetch(`/api/jobs/${id}`, { method: 'DELETE' });
+    await fetchState();
+    showToast('🗑️ Gelöscht');
 }
 
 async function saveDish() {

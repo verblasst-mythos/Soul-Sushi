@@ -11,7 +11,7 @@ begin
   if d is null then
     d := jsonb_build_object('status', '{"isOpen":true,"workload":"Niedrig","discordWebhook":""}'::jsonb);
   end if;
-  foreach k in array array['roles','staff','menu','orders','reservations','customers','vipApplications','appointments'] loop
+  foreach k in array array['roles','staff','menu','orders','reservations','customers','vipApplications','appointments','news','jobs'] loop
     if d->k is null then d := jsonb_set(d, array[k], '[]'::jsonb); end if;
   end loop;
   return d;
@@ -93,6 +93,26 @@ begin
   return r;
 end $$;
 
+-- Öffentlicher Zustand inkl. News, Stellen und Bewerbungsphase
+create or replace function public.api_public_state() returns jsonb
+language plpgsql security definer set search_path = private, public as $$
+declare d jsonb;
+begin
+  select data into d from private.state where id = 'main';
+  d := coalesce(d, '{}'::jsonb);
+  return jsonb_build_object(
+    'status',  jsonb_build_object('isOpen', case when exists (select 1 from jsonb_array_elements(coalesce(d->'staff', '[]'::jsonb)) st where coalesce((st->>'onDuty')::boolean, false)) then coalesce(d->'status'->'isOpen', 'true'::jsonb) else 'false'::jsonb end,
+                                  'workload', coalesce(d->'status'->'workload', '"Niedrig"'::jsonb),
+                                  'discordInvite', coalesce(d->'status'->'discordInvite', '""'::jsonb),
+                                  'applicationsOpen', coalesce(d->'status'->'applicationsOpen', 'false'::jsonb)),
+    'roles',   coalesce(d->'roles', '[]'::jsonb),
+    'staff',   private.staff_public(coalesce(d->'staff', '[]'::jsonb)),
+    'menu',    coalesce(d->'menu', '[]'::jsonb),
+    'news',    coalesce(d->'news', '[]'::jsonb),
+    'jobs',    coalesce(d->'jobs', '[]'::jsonb),
+    'orders', '[]'::jsonb, 'reservations', '[]'::jsonb, 'customers', '[]'::jsonb, 'vipApplications', '[]'::jsonb);
+end $$;
+
 -- Termin anfragen (nur eingeloggte Kunden)
 create or replace function public.api_appointment_create(p_username text, p_password text, p jsonb) returns jsonb
 language plpgsql security definer set search_path = private, public as $$
@@ -164,7 +184,9 @@ begin
     'reservations', coalesce(d->'reservations', '[]'::jsonb),
     'customers', private.customer_view(coalesce(d->'customers', '[]'::jsonb)),
     'vipApplications', coalesce(d->'vipApplications', '[]'::jsonb),
-    'appointments', coalesce(d->'appointments', '[]'::jsonb));
+    'appointments', coalesce(d->'appointments', '[]'::jsonb),
+    'news', coalesce(d->'news', '[]'::jsonb),
+    'jobs', coalesce(d->'jobs', '[]'::jsonb));
 end $$;
 
 create or replace function public.api_staff_do(p_token text, p_action text, p jsonb) returns jsonb
@@ -236,7 +258,7 @@ begin
         return jsonb_build_object('error', 'Der Laden kann erst geöffnet werden, wenn mindestens ein Mitarbeiter eingestempelt ist.', 'status', 409);
       end if;
       patch := coalesce((select jsonb_object_agg(k, v) from jsonb_each(p) t(k, v)
-                          where k in ('isOpen', 'workload', 'discordWebhook', 'discordInvite')), '{}'::jsonb);
+                          where k in ('isOpen', 'workload', 'discordWebhook', 'discordInvite', 'applicationsOpen')), '{}'::jsonb);
       d := jsonb_set(d, '{status}', coalesce(d->'status', '{}'::jsonb) || patch);
       res := d->'status';
 
@@ -350,6 +372,44 @@ begin
       delete from private.sessions where staff_id = p->>'id';
       res := private.staff_view(d->'staff');
 
+    when 'news_add' then
+      if btrim(coalesce(p->>'title', '')) = '' then
+        return jsonb_build_object('error', 'Bitte einen Titel angeben.', 'status', 400);
+      end if;
+      d := jsonb_set(d, '{news}', jsonb_build_array(jsonb_build_object(
+            'id', private.now_id()::text, 'createdAt', private.now_id(), 'title', left(btrim(p->>'title'), 120),
+            'text', left(coalesce(p->>'text', ''), 1500), 'pinned', coalesce((p->>'pinned')::boolean, false))) || coalesce(d->'news', '[]'::jsonb));
+      res := d->'news';
+
+    when 'news_update' then
+      patch := jsonb_build_object('title', left(btrim(coalesce(p->>'title', '')), 120), 'text', left(coalesce(p->>'text', ''), 1500),
+                                  'pinned', coalesce((p->>'pinned')::boolean, false));
+      d := jsonb_set(d, '{news}', private.arr_patch(d->'news', p->>'id', patch));
+      res := d->'news';
+
+    when 'news_delete' then
+      d := jsonb_set(d, '{news}', private.arr_del(d->'news', p->>'id'));
+      res := d->'news';
+
+    when 'job_add' then
+      if btrim(coalesce(p->>'title', '')) = '' then
+        return jsonb_build_object('error', 'Bitte eine Stellenbezeichnung angeben.', 'status', 400);
+      end if;
+      d := jsonb_set(d, '{jobs}', coalesce(d->'jobs', '[]'::jsonb) || jsonb_build_array(jsonb_build_object(
+            'id', private.now_id()::text, 'title', left(btrim(p->>'title'), 80), 'type', left(coalesce(p->>'type', ''), 40),
+            'description', left(coalesce(p->>'description', ''), 800), 'requirements', left(coalesce(p->>'requirements', ''), 800))));
+      res := d->'jobs';
+
+    when 'job_update' then
+      patch := jsonb_build_object('title', left(btrim(coalesce(p->>'title', '')), 80), 'type', left(coalesce(p->>'type', ''), 40),
+                                  'description', left(coalesce(p->>'description', ''), 800), 'requirements', left(coalesce(p->>'requirements', ''), 800));
+      d := jsonb_set(d, '{jobs}', private.arr_patch(d->'jobs', p->>'id', patch));
+      res := d->'jobs';
+
+    when 'job_delete' then
+      d := jsonb_set(d, '{jobs}', private.arr_del(d->'jobs', p->>'id'));
+      res := d->'jobs';
+
     when 'menu_add' then
       d := jsonb_set(d, '{menu}', d->'menu' || jsonb_build_array(jsonb_build_object(
             'id', private.now_id(), 'category', left(p->>'category', 40), 'name', left(p->>'name', 80),
@@ -379,7 +439,7 @@ do $$
 declare f text;
 begin
   foreach f in array array[
-    'api_appointment_create(text,text,jsonb)', 'api_place_reservation(jsonb)', 'api_taken_tables(text,text)', 'api_my_appointments(text,text)',
+    'api_appointment_create(text,text,jsonb)', 'api_place_reservation(jsonb)', 'api_taken_tables(text,text)', 'api_public_state()', 'api_my_appointments(text,text)',
     'api_staff_state(text)', 'api_staff_do(text,text,jsonb)'] loop
     execute format('revoke all on function public.%s from public', f);
     execute format('grant execute on function public.%s to anon, authenticated', f);
