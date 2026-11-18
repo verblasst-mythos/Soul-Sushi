@@ -84,6 +84,9 @@
   route('DELETE', '/api/staff/:id', async (b, [id]) => staff('staff_delete', () => ({ id }))());
   route('POST', '/api/roles/add', async b => staff('role_add', () => b)());
   route('DELETE', '/api/roles/:id', async (b, [id]) => staff('role_delete', () => ({ id }))());
+  route('POST', '/api/discounts/add', async b => staff('discount_add', () => b)());
+  route('PUT', '/api/discounts/:id', async (b, [id]) => staff('discount_update', () => Object.assign({}, b, { id }))());
+  route('DELETE', '/api/discounts/:id', async (b, [id]) => staff('discount_delete', () => ({ id }))());
   route('POST', '/api/news/add', async b => staff('news_add', () => b)());
   route('PUT', '/api/news/:id', async (b, [id]) => staff('news_update', () => Object.assign({}, b, { id }))());
   route('DELETE', '/api/news/:id', async (b, [id]) => staff('news_delete', () => ({ id }))());

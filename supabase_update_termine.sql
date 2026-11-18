@@ -11,7 +11,7 @@ begin
   if d is null then
     d := jsonb_build_object('status', '{"isOpen":true,"workload":"Niedrig","discordWebhook":""}'::jsonb);
   end if;
-  foreach k in array array['roles','staff','menu','orders','reservations','customers','vipApplications','appointments','news','jobs'] loop
+  foreach k in array array['roles','staff','menu','orders','reservations','customers','vipApplications','appointments','news','jobs','discounts'] loop
     if d->k is null then d := jsonb_set(d, array[k], '[]'::jsonb); end if;
   end loop;
   return d;
@@ -186,7 +186,8 @@ begin
     'vipApplications', coalesce(d->'vipApplications', '[]'::jsonb),
     'appointments', coalesce(d->'appointments', '[]'::jsonb),
     'news', coalesce(d->'news', '[]'::jsonb),
-    'jobs', coalesce(d->'jobs', '[]'::jsonb));
+    'jobs', coalesce(d->'jobs', '[]'::jsonb),
+    'discounts', coalesce(d->'discounts', '[]'::jsonb));
 end $$;
 
 create or replace function public.api_staff_do(p_token text, p_action text, p jsonb) returns jsonb
@@ -372,6 +373,25 @@ begin
       delete from private.sessions where staff_id = p->>'id';
       res := private.staff_view(d->'staff');
 
+    when 'discount_add' then
+      if btrim(coalesce(p->>'code', '')) = '' then
+        return jsonb_build_object('error', 'Bitte einen Code angeben.', 'status', 400);
+      end if;
+      d := jsonb_set(d, '{discounts}', coalesce(d->'discounts', '[]'::jsonb) || jsonb_build_array(jsonb_build_object(
+            'id', private.now_id()::text, 'code', left(btrim(p->>'code'), 30), 'name', left(coalesce(p->>'name', ''), 120),
+            'group', left(coalesce(nullif(btrim(p->>'group'), ''), 'Sonstiges'), 40))));
+      res := d->'discounts';
+
+    when 'discount_update' then
+      patch := jsonb_build_object('code', left(btrim(coalesce(p->>'code', '')), 30), 'name', left(coalesce(p->>'name', ''), 120),
+                                  'group', left(coalesce(nullif(btrim(p->>'group'), ''), 'Sonstiges'), 40));
+      d := jsonb_set(d, '{discounts}', private.arr_patch(d->'discounts', p->>'id', patch));
+      res := d->'discounts';
+
+    when 'discount_delete' then
+      d := jsonb_set(d, '{discounts}', private.arr_del(d->'discounts', p->>'id'));
+      res := d->'discounts';
+
     when 'news_add' then
       if btrim(coalesce(p->>'title', '')) = '' then
         return jsonb_build_object('error', 'Bitte einen Titel angeben.', 'status', 400);
@@ -445,5 +465,10 @@ begin
     execute format('grant execute on function public.%s to anon, authenticated', f);
   end loop;
 end $$;
+
+-- Startliste Rabattcodes (nur einmalig, solange noch keine Liste existiert)
+update private.state
+   set data = jsonb_set(data, '{discounts}', '[{"id": "d1", "code": "Craft", "name": "CCM", "group": "Firmen"}, {"id": "d2", "code": "NL", "name": "NextLevel", "group": "Firmen"}, {"id": "d3", "code": "RKO", "name": "Mitarbeiter (Soul Sushi Intern)", "group": "Firmen"}, {"id": "d4", "code": "JS", "name": "Justiz", "group": "Firmen"}, {"id": "d5", "code": "AN", "name": "ANRW", "group": "Firmen"}, {"id": "d6", "code": "LM", "name": "Lost MC", "group": "Firmen"}, {"id": "d7", "code": "VAS", "name": "Vagos", "group": "Firmen"}, {"id": "d8", "code": "SUSM", "name": "Smokeys", "group": "Firmen"}, {"id": "d9", "code": "SCOP", "name": "Scorpions", "group": "Firmen"}, {"id": "d10", "code": "BEFE", "name": "Berufsfeuerwehr", "group": "Firmen"}, {"id": "d11", "code": "BEDO", "name": "Belladonnas", "group": "Firmen"}, {"id": "d12", "code": "ELDO", "name": "Eldorado", "group": "Firmen"}, {"id": "d13", "code": "TAKO", "name": "Taxi Köln", "group": "Firmen"}, {"id": "d14", "code": "BLPY", "name": "Black Pytons", "group": "Firmen"}, {"id": "d15", "code": "BURH", "name": "Burger House", "group": "Firmen"}, {"id": "d16", "code": "UKK", "name": "UnfallKlinikum Köln", "group": "Firmen"}, {"id": "d17", "code": "BP", "name": "Blue Pearl", "group": "Firmen"}, {"id": "d18", "code": "DOPPEL", "name": "ab 150 Essen / Trinken", "group": "Großbestellungen"}, {"id": "d19", "code": "MAXI", "name": "ab 250 Essen / Trinken", "group": "Großbestellungen"}, {"id": "d20", "code": "ULTRA", "name": "ab 500 Essen / Trinken", "group": "Großbestellungen"}, {"id": "d21", "code": "SALE", "name": "20 % Rabatt", "group": "Aktionen"}, {"id": "d22", "code": "MISA", "name": "25 % · Mittwoch und Samstag, 20–24 Uhr", "group": "Aktionen"}]'::jsonb)
+ where id = 'main' and data->'discounts' is null;
 
 commit;

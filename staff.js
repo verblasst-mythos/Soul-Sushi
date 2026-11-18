@@ -407,6 +407,74 @@ function showResOnMap(id) {
     if (resView.activeId) { const m = document.querySelector('.rs-board'); if (m) m.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
 }
 
+function groupedDiscounts(q) {
+    const list = (appState.discounts || []).filter(d =>
+        !q || (d.code + ' ' + d.name + ' ' + d.group).toLowerCase().includes(q));
+    const groups = {};
+    list.forEach(d => { (groups[d.group || 'Sonstiges'] = groups[d.group || 'Sonstiges'] || []).push(d); });
+    return groups;
+}
+
+function renderDiscountsView(force) {
+    const box = document.getElementById('discountsView');
+    if (!box || !appState) return;
+    const q = ((document.getElementById('discountSearch') || {}).value || '').trim().toLowerCase();
+    const sig = JSON.stringify([appState.discounts || [], q]);
+    if (!force && box.dataset.sig === sig) return;
+    box.dataset.sig = sig;
+    const groups = groupedDiscounts(q), names = Object.keys(groups);
+    box.innerHTML = names.length ? names.map(g => `<div class="admin-card" style="margin-bottom:16px;"><h4>${escHtml(g)}</h4>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px 24px;margin-top:8px;">
+        ${groups[g].map(d => `<div style="display:flex;gap:10px;align-items:baseline;"><strong style="min-width:64px;color:var(--lantern,#f0b866);">${escHtml(d.code)}</strong><span>${escHtml(d.name)}</span></div>`).join('')}
+        </div></div>`).join('') : '<p class="muted-small">Keine Codes gefunden.</p>';
+}
+
+function renderDiscountsAdmin() {
+    const box = document.getElementById('adminDiscountsList');
+    if (!box) return;
+    const list = appState.discounts || [], sig = JSON.stringify(list);
+    if (box.dataset.sig === sig) return;
+    box.dataset.sig = sig;
+    box.innerHTML = list.length ? list.map(d => `<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);">
+        <div><strong>${escHtml(d.code)}</strong> ${escHtml(d.name)} <small>(${escHtml(d.group || '')})</small></div>
+        <div style="display:flex;gap:6px;"><button type="button" class="btn-nav-outline" style="padding:6px 10px;font-size:11px;" onclick="editDiscount('${d.id}')">✏️</button>
+        <button type="button" class="btn-nav-outline" style="padding:6px 10px;font-size:11px;" onclick="deleteDiscount('${d.id}')">🗑️</button></div></div>`).join('') : '<p>Keine Codes.</p>';
+}
+
+function resetDiscountForm() {
+    ['editDiscountId', 'discountCodeInput', 'discountNameInput', 'discountGroupInput'].forEach(i => document.getElementById(i).value = '');
+    document.getElementById('discountFormHeading').textContent = 'Code hinzufügen';
+}
+
+async function saveDiscount() {
+    if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
+    const id = document.getElementById('editDiscountId').value;
+    const code = document.getElementById('discountCodeInput').value.trim();
+    if (!code) return showToast('Code angeben');
+    const body = { code, name: document.getElementById('discountNameInput').value.trim(), group: document.getElementById('discountGroupInput').value.trim() };
+    await fetch(id ? `/api/discounts/${id}` : '/api/discounts/add', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    resetDiscountForm();
+    await fetchState();
+    showToast('✅ Gespeichert');
+}
+
+function editDiscount(id) {
+    const d = (appState.discounts || []).find(x => x.id === id);
+    if (!d) return;
+    document.getElementById('editDiscountId').value = d.id;
+    document.getElementById('discountCodeInput').value = d.code;
+    document.getElementById('discountNameInput').value = d.name || '';
+    document.getElementById('discountGroupInput').value = d.group || '';
+    document.getElementById('discountFormHeading').textContent = 'Code bearbeiten';
+}
+
+async function deleteDiscount(id) {
+    if (!await showActionConfirm('Code löschen', 'Diesen Rabattcode wirklich löschen?', 'Löschen')) return;
+    await fetch(`/api/discounts/${id}`, { method: 'DELETE' });
+    await fetchState();
+    showToast('🗑️ Gelöscht');
+}
+
 function renderAllViews() {
     if (!appState || !currentUser) return;
 
@@ -566,6 +634,7 @@ function renderAllViews() {
 
         renderAppointments();
         renderNewsJobsAdmin();
+        renderDiscountsAdmin();
 
         document.getElementById('accountsManageList').innerHTML =
             appState.staff.map(s => {
@@ -809,6 +878,8 @@ function renderAllViews() {
     renderPosTicket();
 
     renderStaffReservations();
+
+    renderDiscountsView();
 }
 
 // =====================================================

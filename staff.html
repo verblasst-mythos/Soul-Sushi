@@ -39,6 +39,7 @@
                 <button type="button" class="ws-tab" id="tabBtnVip" onclick="switchWorkspaceTab('vip-readonly', this)">👑 VIP-Übersicht</button>
                 <button type="button" class="ws-tab" id="tabBtnClock" onclick="switchWorkspaceTab('clock', this)">🕒 Stempeluhr</button>
                 <button type="button" class="ws-tab" id="tabBtnPhotos" onclick="switchWorkspaceTab('team-photos', this)">🖼️ Team-Bilder</button>
+                <button type="button" class="ws-tab" id="tabBtnDiscounts" onclick="switchWorkspaceTab('discounts', this)">🏷️ Rabattcodes</button>
                 <button type="button" class="ws-tab" id="tabBtnAdmin" onclick="switchWorkspaceTab('admin', this)">🛡️ Verwaltung</button>
                 <button type="button" class="ws-tab" id="tabBtnKitchen" onclick="switchWorkspaceTab('kitchen', this)">🔥 Live-Küche</button>
                 <button type="button" class="ws-tab" id="tabBtnPos" onclick="switchWorkspaceTab('pos', this)">💳 Kasse</button>
@@ -83,6 +84,12 @@
                 </div>
             </section>
 
+            <section id="panel-discounts" class="ws-panel">
+                <div class="section-header-row"><h3>Rabattcodes</h3></div>
+                <input type="search" id="discountSearch" placeholder="Code oder Name suchen…" oninput="renderDiscountsView(true)" style="max-width:340px;margin:10px 0 16px;">
+                <div id="discountsView"></div>
+            </section>
+
             <!-- VERWALTUNG (INKL. KUNDEN & VIP-ANTRÄGE) -->
             <section id="panel-admin" class="ws-panel">
                 <div class="admin-banner">
@@ -96,6 +103,7 @@
                     <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-appointments', this)">📅 Termine</button>
                     <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-accounts', this)">👤 Mitarbeiter-Konten</button>
                     <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-roles', this)">🎖️ Rollen</button>
+                    <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-discounts', this)">🏷️ Rabattcodes</button>
                     <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-newsjobs', this)">📰 News & Jobs</button>
                     <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-menu', this)">🍣 Speisekarte</button>
                     <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-shop', this)">⚙️ Shop & Discord</button>
@@ -151,6 +159,22 @@
                             <button type="button" class="btn-red full-width" onclick="createNewRole()">+ ERSTELLEN</button>
                         </div>
                         <div class="admin-card"><h4>Rollen</h4><div id="adminRolesList" class="admin-scroll-list"></div></div>
+                    </div>
+                </div>
+
+                <div id="sub-discounts" class="admin-subpanel">
+                    <div class="admin-two-col">
+                        <div class="admin-card">
+                            <h4 id="discountFormHeading">Code hinzufügen</h4>
+                            <input type="hidden" id="editDiscountId">
+                            <input type="text" id="discountCodeInput" placeholder="Code (z. B. SALE)" maxlength="30">
+                            <input type="text" id="discountNameInput" placeholder="Bedeutung (z. B. 20 % Rabatt)" maxlength="120">
+                            <input type="text" id="discountGroupInput" list="discountGroups" placeholder="Gruppe (z. B. Firmen)" maxlength="40">
+                            <datalist id="discountGroups"><option value="Firmen"><option value="Großbestellungen"><option value="Aktionen"></datalist>
+                            <button type="button" class="btn-red full-width" onclick="saveDiscount()">SPEICHERN</button>
+                            <button type="button" class="btn-white full-width" style="margin-top:8px;" onclick="resetDiscountForm()">Neu / Abbrechen</button>
+                        </div>
+                        <div class="admin-card"><h4>Alle Codes</h4><div id="adminDiscountsList" class="admin-scroll-list"></div></div>
                     </div>
                 </div>
 
