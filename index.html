@@ -258,6 +258,15 @@
             <h3>Warenkorb</h3>
             <div id="cartItemsList" style="margin: 15px 0; max-height: 250px; overflow-y: auto;"></div>
             <div class="cart-total-row"><span>Gesamtsumme:</span><strong id="cartModalTotal">0,00 €</strong></div>
+            <h4 style="margin:22px 0 4px;">Lieferdaten</h4>
+            <label class="field-label">NAME</label>
+            <input type="text" id="orderName" required maxlength="60" placeholder="Vor- und Nachname" autocomplete="name">
+            <label class="field-label">PLZ</label>
+            <input type="text" id="orderZip" required maxlength="10" inputmode="numeric" placeholder="z. B. 50667" autocomplete="postal-code">
+            <label class="field-label">TELEFONNUMMER</label>
+            <input type="tel" id="orderPhone" required maxlength="40" placeholder="+49 176 ..." autocomplete="tel">
+            <label class="field-label">ANMERKUNGEN (OPTIONAL)</label>
+            <textarea id="orderNotes" rows="2" maxlength="500" placeholder="Klingelname, Allergien, Wünsche …"></textarea>
             <div class="form-row" style="margin-top:20px;">
                 <button type="button" class="btn-nav-outline full-width" onclick="closeCartModal()">Schließen</button>
                 <button type="button" class="btn-red full-width" onclick="checkoutOrder()">Bestellung absenden</button>

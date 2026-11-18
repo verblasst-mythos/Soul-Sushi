@@ -824,6 +824,7 @@ function renderAllViews() {
                         <span style="font-size:12px; color:#aaa;">${o.time} Uhr</span>
                     </div>
 
+                    ${orderDeliveryHtml(o)}
                     <ul style="list-style:none; font-size:13px; margin-bottom:14px;">
                         ${o.items.map(i => `<li>• ${i.qty}x ${i.name}</li>`).join('')}
                     </ul>
@@ -851,6 +852,7 @@ function renderAllViews() {
                         <span>${o.time || ''} Uhr</span>
                     </div>
 
+                    ${orderDeliveryHtml(o)}
                     <p style="font-size:12px;color:#aaa;margin:8px 0;">
                         ${(o.items || []).map(i => `${i.qty}x ${i.name}`).join(' · ')}
                     </p>
@@ -1026,6 +1028,16 @@ async function deleteRejectedVipApps() {
 
 // Termine
 let lastApptSig = '';
+
+function orderDeliveryHtml(o) {
+    const dl = o && o.delivery;
+    if (!dl) return '';
+    return `<div style="font-size:12px; line-height:1.6; margin:0 0 12px; padding:8px 10px; border:1px solid rgba(255,255,255,0.12); border-radius:3px;">
+        <div>🚚 <b>${escHtml(dl.name || '')}</b> · PLZ <b>${escHtml(dl.zip || '')}</b></div>
+        <div>📞 <code>${escHtml(dl.phone || '')}</code></div>
+        ${dl.notes ? `<div>📝 ${escHtml(dl.notes)}</div>` : ''}
+    </div>`;
+}
 
 function escHtml(v) {
     return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

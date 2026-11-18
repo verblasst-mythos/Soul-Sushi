@@ -268,6 +268,9 @@ function openCartModal() {
         totalEl.textContent = `${total.toFixed(2).replace('.', ',')} €`;
     }
 
+    const nameEl = document.getElementById('orderName');
+    if (nameEl && !nameEl.value && currentCustomer && currentCustomer.username) nameEl.value = currentCustomer.username;
+
     modal.classList.add('open');
 }
 
@@ -305,21 +308,44 @@ async function checkoutOrder() {
 
     const total = rawTotal * (1 - discountPercent / 100);
 
-    await fetch('/api/orders', {
+    const val = id => ((document.getElementById(id) || {}).value || '').trim();
+    const delivery = {
+        name: val('orderName'),
+        zip: val('orderZip'),
+        phone: val('orderPhone'),
+        notes: val('orderNotes')
+    };
+
+    if (!delivery.name) return showToast('Bitte deinen Namen angeben');
+    if (!/^\d{4,6}$/.test(delivery.zip)) return showToast('Bitte eine gültige PLZ angeben');
+    if (delivery.phone.replace(/\D/g, '').length < 5) return showToast('Bitte eine Telefonnummer angeben');
+
+    const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             customer: currentCustomer
                 ? currentCustomer.username
-                : 'Online Kunde',
+                : delivery.name,
             table: 'Lieferung / Abholung',
+            delivery,
             items: cart,
             total: total
         })
     });
 
+    if (!res.ok) {
+        let msg = 'Bestellung konnte nicht gesendet werden';
+        try { msg = (await res.json()).error || msg; } catch (e) {}
+        return showToast('❌ ' + msg);
+    }
+
     cart = [];
     updateCartCount();
+    ['orderName', 'orderZip', 'orderPhone', 'orderNotes'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
     closeCartModal();
     showToast('🎉 Bestellung erfolgreich abgesendet!');
 }
