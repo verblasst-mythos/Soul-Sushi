@@ -1580,6 +1580,16 @@ function setPosQty(id, value) {
     renderPosTicket();
 }
 
+function changePosQty(id, delta) {
+    const item = posCart.find(i => String(i.id) === String(id));
+
+    if (!item) return;
+
+    if (item.qty + delta < 1) return removePosItem(id);
+
+    setPosQty(id, item.qty + delta);
+}
+
 function removePosItem(id) {
     posCart = posCart.filter(item => String(item.id) !== String(id));
 
@@ -1602,10 +1612,11 @@ function renderPosTicket() {
                         </small>
                     </span>
 
-                    <label style="display:flex;align-items:center;gap:6px;">
-                        Anzahl
-                        <input aria-label="Anzahl ${i.name}" type="number" min="1" max="999" value="${i.qty}" onchange="setPosQty('${i.id}', this.value)" style="width:64px;padding:7px;background:#181818;color:#fff;border:1px solid #555;border-radius:6px;">
-                    </label>
+                    <div class="qty-stepper" role="group" aria-label="Anzahl ${i.name}">
+                        <button type="button" class="qty-btn" aria-label="Weniger" onclick="changePosQty('${i.id}', -1)">−</button>
+                        <input aria-label="Anzahl ${i.name}" type="number" min="1" max="999" value="${i.qty}" onchange="setPosQty('${i.id}', this.value)" style="width:52px;padding:6px;text-align:center;background:#181818;color:#fff;border:1px solid #555;border-radius:6px;">
+                        <button type="button" class="qty-btn" aria-label="Mehr" onclick="changePosQty('${i.id}', 1)">+</button>
+                    </div>
 
                     <strong style="min-width:75px;text-align:right;">
                         ${(i.price * i.qty).toFixed(2).replace('.', ',')} €

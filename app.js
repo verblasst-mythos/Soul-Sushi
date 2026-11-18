@@ -147,11 +147,27 @@ function renderMenu() {
                 </div>
                 <p class="dish-desc">${d.desc || ''}</p>
             </div>
-            <button type="button" class="btn-red full-width" onclick="addToCart(${d.id})">
-                In den Warenkorb
-            </button>
+            <div class="dish-actions">
+                <div class="qty-stepper" role="group" aria-label="Menge ${d.name}">
+                    <button type="button" class="qty-btn" aria-label="Weniger" onclick="changeMenuQty(${d.id}, -1)">−</button>
+                    <span class="qty-val" id="menuQty-${d.id}">${menuQty[d.id] || 1}</span>
+                    <button type="button" class="qty-btn" aria-label="Mehr" onclick="changeMenuQty(${d.id}, 1)">+</button>
+                </div>
+                <button type="button" class="btn-red" onclick="addToCart(${d.id})">
+                    In den Warenkorb
+                </button>
+            </div>
         </div>
     `).join('');
+}
+
+const menuQty = {};
+
+function changeMenuQty(id, delta) {
+    const q = Math.max(1, Math.min(99, (menuQty[id] || 1) + delta));
+    menuQty[id] = q;
+    const el = document.getElementById('menuQty-' + id);
+    if (el) el.textContent = q;
 }
 
 function selectMenuCategory(cat) {
@@ -191,16 +207,21 @@ function addToCart(id) {
 
     if (!item) return;
 
+    const amount = menuQty[id] || 1;
     const existing = cart.find(c => c.id === id);
 
     if (existing) {
-        existing.qty++;
+        existing.qty = Math.min(99, existing.qty + amount);
     } else {
-        cart.push({ ...item, qty: 1 });
+        cart.push({ ...item, qty: amount });
     }
 
+    menuQty[id] = 1;
+    const qtyEl = document.getElementById('menuQty-' + id);
+    if (qtyEl) qtyEl.textContent = 1;
+
     updateCartCount();
-    showToast(`✅ ${item.name} zum Warenkorb hinzugefügt`);
+    showToast(`✅ ${amount}x ${item.name} zum Warenkorb hinzugefügt`);
 }
 
 function updateCartCount() {
@@ -231,8 +252,13 @@ function openCartModal() {
                     <div>
                         <strong>${i.name}</strong><br>
                         <span style="color:#aaa; font-size:12px;">
-                            ${i.qty}x ${i.price.toFixed(2)} €
+                            ${i.price.toFixed(2)} € / Stück
                         </span>
+                    </div>
+                    <div class="qty-stepper" role="group" aria-label="Menge ${i.name}">
+                        <button type="button" class="qty-btn" aria-label="Weniger" onclick="changeCartQty(${i.id}, -1)">−</button>
+                        <span class="qty-val">${i.qty}</span>
+                        <button type="button" class="qty-btn" aria-label="Mehr" onclick="changeCartQty(${i.id}, 1)">+</button>
                     </div>
                     <div style="display:flex; align-items:center; gap:10px;">
                         <strong>${(i.price * i.qty).toFixed(2)} €</strong>
@@ -272,6 +298,16 @@ function openCartModal() {
     if (nameEl && !nameEl.value && currentCustomer && currentCustomer.username) nameEl.value = currentCustomer.username;
 
     modal.classList.add('open');
+}
+
+function changeCartQty(id, delta) {
+    const item = cart.find(i => i.id === id);
+    if (!item) return;
+    item.qty += delta;
+    if (item.qty <= 0) return removeFromCart(id);
+    item.qty = Math.min(99, item.qty);
+    updateCartCount();
+    openCartModal();
 }
 
 function removeFromCart(id) {
