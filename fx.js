@@ -70,6 +70,7 @@
         input.dataset.iso = day.dataset.v;
         input.value = p[2] + '.' + p[1] + '.' + p[0];
         cal.hidden = true;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
       }
     });
 

@@ -218,6 +218,8 @@
                 <input type="text" id="resDate" class="date-pick" readonly required placeholder="Datum im Kalender wählen" autocomplete="off">
                 <label class="field-label">UHRZEIT</label>
                 <input type="time" id="resTime" value="19:00" required>
+                <label class="field-label">TISCH WÄHLEN (OPTIONAL)</label>
+                <div id="resMap" class="fp-wrap"></div>
                 <label class="field-label">TELEFONNUMMER</label>
                 <input type="tel" id="resPhone" required maxlength="40" placeholder="+49 176 ...">
                 <label class="field-label">BEREICH</label>
@@ -253,6 +255,7 @@
     </div>
     <script src="config.js"></script>
     <script src="api.js"></script>
+    <script src="floorplan.js"></script>
     <script src="app.js"></script>
     <script src="fx.js"></script>
 </body>

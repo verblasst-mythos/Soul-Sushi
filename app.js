@@ -330,6 +330,8 @@ function openReservationModal() {
 
     const modal = document.getElementById('reservationModal');
 
+    initReservationMap();
+
     if (modal) {
         modal.classList.add('open');
     }
@@ -361,6 +363,7 @@ async function submitReservation(event) {
     const type = document.getElementById('resType').value;
     const phone = document.getElementById('resPhone').value.trim();
     const notes = document.getElementById('resNotes').value.trim();
+    const tables = window.FloorPlan ? FloorPlan.selected() : [];
 
     if (
         !name ||
@@ -371,6 +374,13 @@ async function submitReservation(event) {
         guests < 1
     ) {
         return showToast('❌ Bitte überprüfe deine Reservierungsdaten.');
+    }
+
+    if (tables.length && tables[0].charAt(0) === 'B') {
+        const seatsChosen = tables.length;
+        if (seatsChosen < guests) {
+            return showToast(`❌ Für ${guests} Personen brauchst du ${guests} Barhocker (gewählt: ${seatsChosen}).`);
+        }
     }
 
     try {
@@ -386,7 +396,8 @@ async function submitReservation(event) {
                 time,
                 type,
                 phone,
-                notes
+                notes,
+                tables
             })
         });
 
@@ -405,6 +416,8 @@ async function submitReservation(event) {
         document.getElementById('resPhone').value = '';
         document.getElementById('resNotes').value = '';
         if (window.resetDatePick) window.resetDatePick('resDate');
+        if (window.FloorPlan) FloorPlan.reset();
+        updateTakenTables();
 
     } catch (error) {
         console.error('Reservierungsfehler:', error);
@@ -787,4 +800,63 @@ async function loadMyAppointments() {
 function fmtDate(iso) {
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
     return m ? m[3] + '.' + m[2] + '.' + m[1] : String(iso || '');
+}
+
+
+// Raumplan der Reservierung
+
+let resMapReady = false;
+let takenReq = 0;
+
+function initReservationMap() {
+    if (resMapReady || !window.FloorPlan) return;
+    const box = document.getElementById('resMap');
+    if (!box) return;
+    resMapReady = true;
+
+    FloorPlan.init(box, function () {
+        // Bereich folgt dem gewählten Tisch
+        const type = document.getElementById('resType');
+        const area = FloorPlan.areaOfSelection();
+        if (type) {
+            if (area) { type.value = area; type.disabled = true; }
+            else { type.disabled = false; }
+        }
+    });
+
+    ['resDate', 'resTime', 'resGuests'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', updateTakenTables);
+            el.addEventListener('input', updateTakenTables);
+        }
+    });
+
+    updateTakenTables();
+}
+
+async function updateTakenTables() {
+    if (!window.FloorPlan) return;
+
+    const date = document.getElementById('resDate').dataset.iso || '';
+    const time = document.getElementById('resTime').value.trim();
+
+    if (!date || !time) return FloorPlan.setTaken([], false);
+
+    const mine = ++takenReq;
+
+    try {
+        const res = await fetch('/api/tables/taken', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ date, time })
+        });
+        const data = await res.json();
+
+        if (mine !== takenReq) return; // neuere Anfrage läuft
+
+        FloorPlan.setTaken(res.ok ? (data.taken || []) : [], true);
+    } catch (err) {
+        if (mine === takenReq) FloorPlan.setTaken([], true);
+    }
 }

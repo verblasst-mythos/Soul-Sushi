@@ -73,6 +73,7 @@
 
   // Kasse (Mitarbeiter) bzw. Online-Bestellung (Kunde)
   route('POST', '/api/orders', async b => isStaffPage && getToken() ? staff('order_create', () => b)() : wrap(await rpc('api_place_order', { p: b })));
+  route('POST', '/api/tables/taken', async b => wrap(await rpc('api_taken_tables', { p_date: b.date || '', p_time: b.time || '' })));
   route('POST', '/api/reservations', async b => wrap(await rpc('api_place_reservation', { p: b })));
 
   route('POST', '/api/status', async b => staff('status', () => b)());

@@ -266,3 +266,28 @@ body {
 .mini-cal .mc-day:disabled { color: rgba(241,233,218,.22); cursor: default; }
 .mini-cal .mc-day.today { box-shadow: inset 0 0 0 1px var(--lantern); }
 .mini-cal .mc-day.sel { background: var(--lacquer); color: #fff; }
+
+/* ---------- Raumplan ---------- */
+#reservationModal .modal-box { max-width: 580px; }
+.fp-wrap { margin: 0 0 18px; }
+.fp-svg { width: 100%; height: auto; display: block; border-radius: 4px; }
+.fp-wall { fill: rgba(241,233,218,.55); font-size: 11px; font-family: var(--font-body); }
+.fp-table { cursor: pointer; outline: none; }
+.fp-top { fill: #2b1d17; stroke: rgba(240,184,102,.65); stroke-width: 1.5; transition: fill .25s, stroke .25s; }
+.fp-id { fill: var(--washi); font: 700 12px var(--font-body); pointer-events: none; }
+.fp-seats { fill: var(--mist); font: 10px var(--font-body); pointer-events: none; }
+.fp-free:hover .fp-top, .fp-free:focus-visible .fp-top { fill: rgba(240,184,102,.25); stroke: var(--lantern); }
+.fp-sel .fp-top { fill: var(--lacquer); stroke: #fff; }
+.fp-taken { cursor: not-allowed; }
+.fp-taken .fp-top { fill: #25252d; stroke: rgba(241,233,218,.15); }
+.fp-taken .fp-id, .fp-taken .fp-seats { fill: rgba(241,233,218,.3); }
+.fp-small { cursor: not-allowed; opacity: .45; }
+.fp-off { cursor: default; opacity: .55; }
+.fp-info { margin: 10px 0 8px; font-size: 14px; color: var(--washi); min-height: 1.4em; }
+.fp-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--mist); }
+.fp-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; border: 1px solid var(--lantern); vertical-align: -1px; }
+.fp-legend i.sel { background: var(--lacquer); border-color: #fff; }
+.fp-legend i.taken { background: #25252d; border-color: rgba(241,233,218,.2); }
+.fp-legend i.small { opacity: .45; }
+@media (prefers-reduced-motion: no-preference) { .fp-sel .fp-top { animation: fpPop .35s var(--ease); } @keyframes fpPop { 50% { filter: drop-shadow(0 0 8px rgba(216,57,44,.8)); } } }
+.fp-table[data-id^="B"] .fp-id { font-size: 8px; }

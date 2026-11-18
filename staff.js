@@ -65,7 +65,7 @@ async function fetchState() {
                 const latestRes = newState.reservations[0];
 
                 showCenterAlert(
-                    `Name: ${latestRes.name}\nPersonen: ${latestRes.guests} Gäste\nWann: ${fmtDate(latestRes.date)} um ${latestRes.time} Uhr\nBereich: ${latestRes.type}\nTelefon: ${latestRes.phone || 'Nicht angegeben'}\nAnmerkungen: ${latestRes.notes || 'Keine'}`
+                    `Name: ${latestRes.name}\nPersonen: ${latestRes.guests} Gäste\nWann: ${fmtDate(latestRes.date)} um ${latestRes.time} Uhr\nBereich: ${latestRes.type}${latestRes.tables && latestRes.tables.length ? '\nTisch: ' + latestRes.tables.join(', ') : ''}\nTelefon: ${latestRes.phone || 'Nicht angegeben'}\nAnmerkungen: ${latestRes.notes || 'Keine'}`
                 );
             }
         }
@@ -704,7 +704,7 @@ function renderAllViews() {
                     <div>
                         <strong>${r.name} (${r.guests} Personen)</strong>
                         <div style="font-size:12px; color:#aaa; margin-top:2px;">
-                            Wann: ${escHtml(fmtDate(r.date))} · ${escHtml(r.time)} Uhr · Bereich: ${escHtml(r.type)}
+                            Wann: ${escHtml(fmtDate(r.date))} · ${escHtml(r.time)} Uhr · Bereich: ${escHtml(r.type)}${r.tables && r.tables.length ? ' · Tisch: ' + escHtml(r.tables.join(', ')) : ''}
                         </div>
                         <div style="font-size:12px; color:#aaa; margin-top:2px;">
                             📞 ${r.phone ? `<code>${escHtml(r.phone)}</code>` : 'Nicht angegeben'}
