@@ -1323,10 +1323,31 @@ function resetJobForm() {
 
 const _json = { 'Content-Type': 'application/json' };
 
+// Anfrage an die Datenbank: Fehler werden nicht mehr verschluckt
+async function njRequest(url, method, body) {
+    const res = await fetch(url, { method, headers: _json, body: body ? JSON.stringify(body) : undefined });
+    let data = null;
+    try { data = await res.json(); } catch (e) { /* leere Antwort */ }
+    if (!res.ok || (data && data.error)) {
+        const msg = (data && data.error) || ('Fehler ' + res.status);
+        throw new Error(/Unbekannte Aktion/i.test(msg)
+            ? 'Die Datenbank kennt diese Aktion nicht. Bitte supabase_update_termine.sql im Supabase SQL Editor ausführen.'
+            : msg);
+    }
+    return data;
+}
+
 async function toggleApplications() {
     if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
     const next = !(appState.status && appState.status.applicationsOpen);
-    await fetch('/api/status', { method: 'POST', headers: _json, body: JSON.stringify({ applicationsOpen: next }) });
+    try {
+        const status = await njRequest('/api/status', 'POST', { applicationsOpen: next });
+        if (!status || status.applicationsOpen !== next) {
+            throw new Error('Die Datenbank hat die Bewerbungsphase nicht übernommen. Bitte supabase_update_termine.sql im Supabase SQL Editor ausführen.');
+        }
+    } catch (err) {
+        return showToast('❌ ' + err.message);
+    }
     await fetchState();
     showToast(next ? '✅ Bewerbungsphase offen' : '✅ Bewerbungsphase geschlossen');
 }
@@ -1337,7 +1358,8 @@ async function saveNews() {
     const title = document.getElementById('newsTitleInput').value.trim();
     if (!title) return showToast('Titel angeben');
     const body = { title, text: document.getElementById('newsTextInput').value.trim(), pinned: document.getElementById('newsPinnedInput').checked };
-    await fetch(id ? `/api/news/${id}` : '/api/news/add', { method: id ? 'PUT' : 'POST', headers: _json, body: JSON.stringify(body) });
+    try { await njRequest(id ? `/api/news/${id}` : '/api/news/add', id ? 'PUT' : 'POST', body); }
+    catch (err) { return showToast('❌ ' + err.message); }
     resetNewsForm();
     await fetchState();
     showToast('✅ Gespeichert');
@@ -1357,7 +1379,8 @@ function editNews(id) {
 
 async function deleteNews(id) {
     if (!await showActionConfirm('News löschen', 'Diese News wirklich löschen?', 'Löschen')) return;
-    await fetch(`/api/news/${id}`, { method: 'DELETE' });
+    try { await njRequest(`/api/news/${id}`, 'DELETE'); }
+    catch (err) { return showToast('❌ ' + err.message); }
     await fetchState();
     showToast('🗑️ Gelöscht');
 }
@@ -1369,7 +1392,8 @@ async function saveJob() {
     if (!title) return showToast('Stellenbezeichnung angeben');
     const body = { title, type: document.getElementById('jobTypeInput').value.trim(),
         description: document.getElementById('jobDescInput').value.trim(), requirements: document.getElementById('jobReqInput').value.trim() };
-    await fetch(id ? `/api/jobs/${id}` : '/api/jobs/add', { method: id ? 'PUT' : 'POST', headers: _json, body: JSON.stringify(body) });
+    try { await njRequest(id ? `/api/jobs/${id}` : '/api/jobs/add', id ? 'PUT' : 'POST', body); }
+    catch (err) { return showToast('❌ ' + err.message); }
     resetJobForm();
     await fetchState();
     showToast('✅ Gespeichert');
@@ -1390,7 +1414,8 @@ function editJob(id) {
 
 async function deleteJob(id) {
     if (!await showActionConfirm('Stelle löschen', 'Diese Stellenausschreibung wirklich löschen?', 'Löschen')) return;
-    await fetch(`/api/jobs/${id}`, { method: 'DELETE' });
+    try { await njRequest(`/api/jobs/${id}`, 'DELETE'); }
+    catch (err) { return showToast('❌ ' + err.message); }
     await fetchState();
     showToast('🗑️ Gelöscht');
 }

@@ -5,7 +5,7 @@ Kein eigener Server nötig.
    (Legt gesperrte Tabellen + sichere Funktionen an, Passwörter/PINs werden gehasht.)
 2. `config.js`: eigene SUPABASE_URL und Publishable-Key eintragen
    (Project Settings -> API Keys).
-3. **Reservierungen:** Danach `supabase_update_termine.sql` und anschließend `supabase_fix_reservation_fields.sql` im SQL Editor ausführen. Das Fix-Skript sorgt dafür, dass Telefonnummer, Anmerkungen und Tischwahl gespeichert werden. `supabase_setup.sql` danach nicht erneut ausführen, sonst wird `api_place_reservation` wieder mit der alten Version überschrieben.
+3. **Reihenfolge der Updates (wichtig):** `supabase_update_nov2026.sql` und danach `supabase_update_termine.sql` ausführen – `supabase_update_termine.sql` immer ZULETZT. Es enthält die vollständigen Funktionen für Reservierungen (Telefon, Anmerkungen, Tische), Termine, News, Jobs und Bewerbungsphase. Die nov2026-Datei enthält ältere Versionen der State-Funktionen und würde sonst News, Jobs, Bewerbungsphase und Reservierungsfelder wieder entfernen. `supabase_setup.sql` nicht erneut ausführen. Alle Updates sind mehrfach ausführbar und löschen keine Daten.
 4. GitHub: Dateien in den obersten Ordner des Repos, Settings -> Pages -> Branch main / root.
 
 Mitarbeiter-Login: /staff.html  (Name `Owner`, PIN `0903` – danach ändern!)
