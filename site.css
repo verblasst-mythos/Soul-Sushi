@@ -270,7 +270,7 @@ body {
 /* ---------- Raumplan ---------- */
 #reservationModal .modal-box { max-width: 580px; }
 .fp-wrap { margin: 0 0 18px; }
-.fp-svg { width: 100%; height: auto; display: block; border-radius: 4px; }
+.fp-svg { width: 100%; max-width: 440px; height: auto; display: block; margin: 0 auto; border-radius: 4px; }
 .fp-wall { fill: rgba(241,233,218,.55); font-size: 11px; font-family: var(--font-body); }
 .fp-table { cursor: pointer; outline: none; }
 .fp-top { fill: #2b1d17; stroke: rgba(240,184,102,.65); stroke-width: 1.5; transition: fill .25s, stroke .25s; }

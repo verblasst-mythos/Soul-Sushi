@@ -296,47 +296,17 @@ function getStaffRevenue(staff) {
     return { total, day, week, month };
 }
 
-
 function reservationTableMap(tables) {
-    const selected = new Set((Array.isArray(tables) ? tables : String(tables || '').split(','))
-        .map(v => String(v).trim()).filter(Boolean));
-    const nodes = [];
-    // Gleiche Tischkennungen und Positionen wie im Buchungs-Raumplan (floorplan.js).
-    for (let n = 0; n < 11; n++) {
-        const id = 'N' + (n + 1), x = n < 6 ? 92 : 232, y = n < 6 ? 62 + n * 62 : 92 + (n - 6) * 62;
-        nodes.push({id, x, y, shape:'circle'});
-    }
-    [95,190,285].forEach((y,i) => nodes.push({id:'L'+(i+1),x:395,y,shape:'rect'}));
-    for (let i=0;i<15;i++) nodes.push({id:'B'+(i+1),x:522,y:76+i*22,shape:'circle'});
-    const marks = nodes.map(t => {
-        const active = selected.has(t.id), fill = active ? '#d8392c' : '#51443d';
-        const shape = t.shape === 'rect'
-            ? `<rect x="${t.x-13}" y="${t.y-8}" width="26" height="16" rx="3" fill="${fill}" stroke="${active?'#ffd2cc':'#98877b'}" stroke-width="${active?2:1}"/>`
-            : `<circle cx="${t.x}" cy="${t.y}" r="${t.id[0]==='B'?7:12}" fill="${fill}" stroke="${active?'#ffd2cc':'#98877b'}" stroke-width="${active?2:1}"/>`;
-        return `${shape}<text x="${t.x}" y="${t.y+3}" text-anchor="middle" font-size="${t.id[0]==='B'?6:8}" font-weight="700" fill="#fff">${t.id}</text>`;
-    }).join('');
+    const list = (Array.isArray(tables) ? tables : String(tables || '').split(','))
+        .map(v => String(v).trim()).filter(Boolean);
+    // Gleicher Grundriss wie im Buchungs-Raumplan (floorplan.js)
+    const svg = window.FloorPlan && FloorPlan.staticSvg ? FloorPlan.staticSvg(list) : '';
     return `<div style="margin-top:12px;padding:10px;background:#171310;border:1px solid #49352d;border-radius:10px;">
         <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px;font-size:11px;color:#c9b9ad;">
-          <strong>RAUMPLAN · RESERVIERTE TISCHE ROT</strong><span>🔴 ${selected.size ? escHtml([...selected].join(', ')) : 'Kein Tisch zugewiesen'}</span>
+          <strong>RAUMPLAN · RESERVIERTE TISCHE ROT</strong><span>🔴 ${list.length ? escHtml(list.join(', ')) : 'Kein Tisch zugewiesen'}</span>
         </div>
-        <svg viewBox="0 0 640 440" role="img" aria-label="Raumplan mit markierten reservierten Tischen" style="display:block;width:100%;max-height:190px;">
-          <rect x="10" y="10" width="620" height="420" rx="5" fill="#1a1410" stroke="#70594b"/>
-          <rect x="322" y="50" width="146" height="300" rx="3" fill="#d9a35c" fill-opacity=".06" stroke="#a77b43" stroke-dasharray="5 4"/>
-          <rect x="548" y="56" width="50" height="350" rx="4" fill="#3a1c16" stroke="#8c4438"/>
-          <text x="345" y="28" text-anchor="middle" font-size="11" fill="#b9a89a">Aquarium</text>
-          <text x="573" y="235" text-anchor="middle" font-size="11" fill="#d7b5a7" transform="rotate(90 573 235)">Sushi Bar</text>
-          ${marks}
-          <text x="140" y="418" text-anchor="middle" font-size="11" fill="#d7b5a7">Eingang</text>
-        </svg>
+        ${svg}
     </div>`;
-}
-
-function reservationValue(r, ...keys) {
-    for (const key of keys) {
-        const value = r && r[key];
-        if (value !== undefined && value !== null && String(value).trim() !== '') return value;
-    }
-    return '';
 }
 
 function renderAllViews() {
@@ -745,34 +715,25 @@ function renderAllViews() {
         reservations.length === 0
             ? '<p style="color:#888;">Keine offenen Reservierungen.</p>'
             : reservations.map(r => {
-                const name = reservationValue(r, 'name', 'customer_name') || 'Unbekannter Gast';
-                const guests = reservationValue(r, 'guests') || '1';
-                const date = reservationValue(r, 'date', 'reservation_date');
-                const time = reservationValue(r, 'time', 'reservation_time');
-                const area = reservationValue(r, 'type', 'area', 'reservation_area') || 'Nicht angegeben';
-                const phone = reservationValue(r, 'phone', 'customer_phone');
-                const notes = reservationValue(r, 'notes', 'anmerkungen');
-                const tables = Array.isArray(r.tables) ? r.tables :
-                    (Array.isArray(r.table_ids) ? r.table_ids :
-                    (typeof r.tables === 'string' ? r.tables.split(',').map(x => x.trim()).filter(Boolean) : []));
-                const id = String(reservationValue(r, 'id'));
+                const tables = Array.isArray(r.tables) ? r.tables
+                    : (typeof r.tables === 'string' ? r.tables.split(',').map(x => x.trim()).filter(Boolean) : []);
                 return `
-                <article class="list-item-card" style="margin-top:12px;padding:16px;border:1px solid #554137;border-radius:12px;">
+                <article class="list-item-card" style="margin-top:12px;padding:16px;display:block;">
                     <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;">
                         <div style="min-width:220px;flex:1;">
-                            <strong style="font-size:16px;">${escHtml(name)} · ${escHtml(guests)} Personen</strong>
+                            <strong style="font-size:16px;">${escHtml(r.name || 'Unbekannter Gast')} · ${escHtml(r.guests || 1)} Personen</strong>
                             <div style="font-size:13px;color:#ddd;margin-top:7px;line-height:1.8;">
-                                <div>📅 <strong>Datum:</strong> ${escHtml(date ? fmtDate(date) : 'Nicht angegeben')}</div>
-                                <div>🕒 <strong>Uhrzeit:</strong> ${escHtml(time || 'Nicht angegeben')} Uhr</div>
-                                <div>📍 <strong>Bereich:</strong> ${escHtml(area)}</div>
-                                <div>📞 <strong>Telefonnummer:</strong> ${phone ? `<code>${escHtml(phone)}</code>` : '<span style="color:#ffbd75;">Nicht angegeben</span>'}</div>
-                                <div>📝 <strong>Anmerkungen:</strong> ${notes ? escHtml(notes) : 'Keine Anmerkungen'}</div>
+                                <div>📅 <strong>Datum:</strong> ${escHtml(r.date ? fmtDate(r.date) : 'Nicht angegeben')}</div>
+                                <div>🕒 <strong>Uhrzeit:</strong> ${escHtml(r.time || 'Nicht angegeben')} Uhr</div>
+                                <div>📍 <strong>Bereich:</strong> ${escHtml(r.type || 'Nicht angegeben')}</div>
+                                <div>📞 <strong>Telefonnummer:</strong> ${r.phone ? `<code>${escHtml(r.phone)}</code>` : '<span style="color:#ffbd75;">Nicht angegeben</span>'}</div>
+                                <div>📝 <strong>Anmerkungen:</strong> ${r.notes ? escHtml(r.notes) : 'Keine Anmerkungen'}</div>
                                 <div>🪑 <strong>Reservierter Tisch:</strong> ${tables.length ? escHtml(tables.join(', ')) : 'Automatische Platzzuweisung / kein Tisch ausgewählt'}</div>
                             </div>
                         </div>
                         <div style="display:flex;align-items:center;gap:10px;">
                             <span style="color:var(--green-live);font-size:12px;">${escHtml(r.status || 'Bestätigt')}</span>
-                            <button type="button" class="btn-red" style="padding:6px 12px;font-size:12px;" onclick="deleteReservation('${escHtml(id)}')">Löschen</button>
+                            <button type="button" class="btn-red" style="padding:6px 12px;font-size:12px;" onclick="deleteReservation('${escHtml(String(r.id))}')">Löschen</button>
                         </div>
                     </div>
                     ${reservationTableMap(tables)}

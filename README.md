@@ -1,21 +1,18 @@
-# Soul Sushi – GitHub Pages + Supabase
-
+# Soul Sushi – GitHub Pages + Supabase (gesichert)
 Kein eigener Server nötig.
 
-## Einrichtung / Update
+1. Supabase: SQL Editor -> kompletten Inhalt von `supabase_setup.sql` einfügen -> Run.
+   (Legt gesperrte Tabellen + sichere Funktionen an, Passwörter/PINs werden gehasht.)
+2. `config.js`: eigene SUPABASE_URL und Publishable-Key eintragen
+   (Project Settings -> API Keys).
+3. **Reservierungen:** Danach `supabase_update_termine.sql` und anschließend `supabase_fix_reservation_fields.sql` im SQL Editor ausführen. Das Fix-Skript sorgt dafür, dass Telefonnummer, Anmerkungen und Tischwahl gespeichert werden. `supabase_setup.sql` danach nicht erneut ausführen, sonst wird `api_place_reservation` wieder mit der alten Version überschrieben.
+4. GitHub: Dateien in den obersten Ordner des Repos, Settings -> Pages -> Branch main / root.
 
-1. Supabase: SQL Editor -> `supabase_setup.sql` ausführen (bei einer Neuinstallation).
-2. Bei einem bestehenden Projekt: die bisher verwendeten Update-SQL-Dateien wie bisher ausführen.
-3. **Wichtig für das Tisch-Reservierungssystem:** Danach `supabase_fix_reservations.sql` vollständig im Supabase SQL Editor ausführen. Dieses Update synchronisiert die bisherigen Reservierungen automatisch mit `public.reservations`. Es erhält die bestehende JSON-Speicherung und das Tischsystem.
-4. `config.js`: eigene `SUPABASE_URL` und den Publishable-Key eintragen.
-5. GitHub: Dateien in den obersten Ordner des Repos legen, Settings -> Pages -> Branch `main` / root.
+Mitarbeiter-Login: /staff.html  (Name `Owner`, PIN `0903` – danach ändern!)
+Neue Mitarbeiter/PINs legst du in der Verwaltung an (PINs sind danach nicht mehr einsehbar).
 
-## Reservierungen
+## Raumplan
 
-- Die Tischprüfung und die bestehende Mitarbeiteransicht bleiben erhalten.
-- Neue Reservierungen werden im bisherigen Hauptspeicher abgelegt und automatisch nach `public.reservations` gespiegelt.
-- Löschungen in der Mitarbeiterverwaltung werden ebenfalls synchronisiert.
-- `public.reservations` bleibt für direkte Browserzugriffe gesperrt. Die Synchronisierung läuft innerhalb der Datenbank.
-- Bereits vorhandene Reservierungen werden beim Ausführen des SQL-Updates einmalig abgeglichen.
-
-Mitarbeiter-Login: `/staff.html` (Initialkonto gemäß eigener Datenbankeinrichtung; PIN nach dem ersten Login ändern).
+- `floorplan.js` zeichnet den Grundriss: Lounge links, Theke mit 12 Barhockern (B1–B12), Tischblock L1–L3.
+- Die Mitarbeiteransicht (`staff.js`) zeigt reservierte Tische rot im selben Plan.
+- Tisch-IDs müssen zu `private.table_seats()` in der Datenbank passen.
