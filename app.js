@@ -353,8 +353,8 @@ async function checkoutOrder() {
     };
 
     if (!delivery.name) return showToast('Bitte deinen Namen angeben');
-    if (!/^\d{4,6}$/.test(delivery.zip)) return showToast('Bitte eine gültige PLZ angeben');
-    if (delivery.phone.replace(/\D/g, '').length < 5) return showToast('Bitte eine Telefonnummer angeben');
+    if (!/^\d{1,10}$/.test(delivery.zip)) return showToast('Bitte eine gültige PLZ angeben');
+    if (delivery.phone.replace(/\D/g, '').length < 1) return showToast('Bitte eine Telefonnummer angeben');
 
     const res = await fetch('/api/orders', {
         method: 'POST',
