@@ -14,5 +14,5 @@ Neue Mitarbeiter/PINs legst du in der Verwaltung an (PINs sind danach nicht mehr
 ## Raumplan
 
 - `floorplan.js` zeichnet den Grundriss: Lounge links, Theke mit 12 Barhockern (B1–B12), Tischblock L1–L3.
-- Die Mitarbeiteransicht (`staff.js`) zeigt reservierte Tische rot im selben Plan.
+- Die Mitarbeiteransicht (`staff.js`) hat im Reiter Reservierungen EINE gemeinsame Raumplan-Karte pro Tag (Tag wählbar, reservierte Tische rot, "Im Plan zeigen" hebt die Tische einer Reservierung gold hervor).
 - Tisch-IDs müssen zu `private.table_seats()` in der Datenbank passen.

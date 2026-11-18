@@ -155,34 +155,68 @@
                 </div>
 
                 <div id="sub-newsjobs" class="admin-subpanel">
-                    <div class="admin-card" style="margin-bottom:20px;">
-                        <h4>Bewerbungsphase</h4>
-                        <p id="applyStateText" style="margin:6px 0 12px;"></p>
-                        <button type="button" class="btn-white full-width" onclick="toggleApplications()">Bewerbungsphase umschalten</button>
-                    </div>
-                    <div class="admin-two-col">
+                    <div class="admin-card nj-card nj-status">
                         <div>
-                            <div class="admin-card" style="margin-bottom:20px;">
-                                <h4 id="newsFormHeading">News verfassen</h4>
-                                <input type="hidden" id="editNewsId">
-                                <input type="text" id="newsTitleInput" placeholder="Titel" maxlength="120">
-                                <textarea id="newsTextInput" rows="4" placeholder="Text" maxlength="1500"></textarea>
-                                <label class="field-label"><input type="checkbox" id="newsPinnedInput"> Oben anpinnen</label>
-                                <button type="button" class="btn-red full-width" onclick="saveNews()">VERÖFFENTLICHEN</button>
-                            </div>
-                            <div class="admin-card"><h4>News</h4><div id="adminNewsList" class="admin-scroll-list"></div></div>
+                            <h4>Bewerbungsphase</h4>
+                            <p class="nj-hint">Steuert, ob Bewerbungen auf der Website möglich sind.</p>
                         </div>
-                        <div>
-                            <div class="admin-card" style="margin-bottom:20px;">
-                                <h4 id="jobFormHeading">Stelle ausschreiben</h4>
-                                <input type="hidden" id="editJobId">
-                                <input type="text" id="jobTitleInput" placeholder="Stellenbezeichnung" maxlength="80">
-                                <input type="text" id="jobTypeInput" placeholder="Art (z. B. Vollzeit, Aushilfe)" maxlength="40">
-                                <textarea id="jobDescInput" rows="3" placeholder="Aufgaben" maxlength="800"></textarea>
-                                <textarea id="jobReqInput" rows="3" placeholder="Voraussetzungen" maxlength="800"></textarea>
-                                <button type="button" class="btn-red full-width" onclick="saveJob()">SPEICHERN</button>
+                        <div class="nj-status-right">
+                            <span id="applyStateText" class="nj-pill closed">Geschlossen</span>
+                            <button type="button" id="applyToggleBtn" class="btn-white" onclick="toggleApplications()">Bewerbungen öffnen</button>
+                        </div>
+                    </div>
+
+                    <div class="admin-two-col nj-cols">
+                        <div class="nj-col">
+                            <div class="admin-card nj-card nj-form" id="newsForm">
+                                <div class="nj-head"><h4 id="newsFormHeading">News verfassen</h4><span class="nj-editing">Bearbeitung</span></div>
+                                <input type="hidden" id="editNewsId">
+                                <div class="nj-field">
+                                    <label class="field-label" for="newsTitleInput">Titel</label>
+                                    <input type="text" id="newsTitleInput" placeholder="Worum geht es?" maxlength="120">
+                                </div>
+                                <div class="nj-field">
+                                    <div class="nj-label-row"><label class="field-label" for="newsTextInput">Text</label><span class="nj-count" data-for="newsTextInput"></span></div>
+                                    <textarea id="newsTextInput" rows="5" placeholder="Was möchtest du mitteilen?" maxlength="1500"></textarea>
+                                </div>
+                                <label class="nj-switch">
+                                    <input type="checkbox" id="newsPinnedInput">
+                                    <span class="nj-slider"></span>
+                                    <span class="nj-switch-text"><strong>Oben anpinnen</strong><small>Bleibt vor allen anderen News sichtbar</small></span>
+                                </label>
+                                <div class="nj-actions">
+                                    <button type="button" id="newsCancelBtn" class="btn-nav-outline" style="display:none;" onclick="resetNewsForm()">Abbrechen</button>
+                                    <button type="button" id="newsSaveBtn" class="btn-red" onclick="saveNews()">Veröffentlichen</button>
+                                </div>
                             </div>
-                            <div class="admin-card"><h4>Stellen</h4><div id="adminJobsList" class="admin-scroll-list"></div></div>
+                            <div class="admin-card nj-card"><div class="nj-head"><h4>News</h4></div><div id="adminNewsList" class="admin-scroll-list nj-list"></div></div>
+                        </div>
+                        <div class="nj-col">
+                            <div class="admin-card nj-card nj-form" id="jobForm">
+                                <div class="nj-head"><h4 id="jobFormHeading">Stelle ausschreiben</h4><span class="nj-editing">Bearbeitung</span></div>
+                                <input type="hidden" id="editJobId">
+                                <div class="nj-field">
+                                    <label class="field-label" for="jobTitleInput">Stellenbezeichnung</label>
+                                    <input type="text" id="jobTitleInput" placeholder="z. B. Sushi-Koch" maxlength="80">
+                                </div>
+                                <div class="nj-field">
+                                    <label class="field-label" for="jobTypeInput">Art der Anstellung</label>
+                                    <input type="text" id="jobTypeInput" placeholder="z. B. Vollzeit, Aushilfe" maxlength="40">
+                                </div>
+                                <div class="nj-field">
+                                    <div class="nj-label-row"><label class="field-label" for="jobDescInput">Aufgaben</label><span class="nj-count" data-for="jobDescInput"></span></div>
+                                    <textarea id="jobDescInput" rows="4" placeholder="Was gehört zur Stelle?" maxlength="800"></textarea>
+                                </div>
+                                <div class="nj-field">
+                                    <div class="nj-label-row"><label class="field-label" for="jobReqInput">Voraussetzungen</label><span class="nj-count" data-for="jobReqInput"></span></div>
+                                    <textarea id="jobReqInput" rows="4" placeholder="Was sollten Bewerber mitbringen?" maxlength="800"></textarea>
+                                </div>
+                                <div class="nj-actions">
+                                    <button type="button" id="jobCancelBtn" class="btn-nav-outline" style="display:none;" onclick="resetJobForm()">Abbrechen</button>
+                                    <button type="button" id="jobSaveBtn" class="btn-red" onclick="saveJob()">Speichern</button>
+                                </div>
+                            </div>
+                            <div class="admin-card nj-card"><div class="nj-head"><h4>Stellen</h4></div><div id="adminJobsList" class="admin-scroll-list nj-list"></div></div>
                         </div>
                     </div>
                 </div>

@@ -296,17 +296,115 @@ function getStaffRevenue(staff) {
     return { total, day, week, month };
 }
 
-function reservationTableMap(tables) {
-    const list = (Array.isArray(tables) ? tables : String(tables || '').split(','))
-        .map(v => String(v).trim()).filter(Boolean);
-    // Gleicher Grundriss wie im Buchungs-Raumplan (floorplan.js)
-    const svg = window.FloorPlan && FloorPlan.staticSvg ? FloorPlan.staticSvg(list) : '';
-    return `<div style="margin-top:12px;padding:10px;background:#171310;border:1px solid #49352d;border-radius:10px;">
-        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px;font-size:11px;color:#c9b9ad;">
-          <strong>RAUMPLAN · RESERVIERTE TISCHE ROT</strong><span>🔴 ${list.length ? escHtml(list.join(', ')) : 'Kein Tisch zugewiesen'}</span>
-        </div>
-        ${svg}
-    </div>`;
+// ---------- Reservierungen: EIN Raumplan für den gewählten Tag ----------
+const resView = { date: null, highlight: [], activeId: null };
+let resSig = '';
+
+function resTables(r) {
+    return Array.isArray(r.tables) ? r.tables
+        : (typeof r.tables === 'string' ? r.tables.split(',').map(x => x.trim()).filter(Boolean) : []);
+}
+
+function renderStaffReservations() {
+    const box = document.getElementById('staffResList');
+    if (!box) return;
+    const all = Array.isArray(appState.reservations) ? appState.reservations : [];
+    const sig = JSON.stringify([all, resView]);
+    if (sig === resSig) return;
+    resSig = sig;
+
+    if (!all.length) {
+        box.innerHTML = '<p class="rs-empty">Keine offenen Reservierungen.</p>';
+        return;
+    }
+
+    const dates = [...new Set(all.map(r => String(r.date || '')))].sort();
+    if (!dates.includes(resView.date)) {
+        const n = new Date(), p = v => String(v).padStart(2, '0');
+        const today = n.getFullYear() + '-' + p(n.getMonth() + 1) + '-' + p(n.getDate());
+        resView.date = dates.find(d => d >= today) || dates[dates.length - 1];
+        resView.highlight = []; resView.activeId = null;
+        resSig = JSON.stringify([all, resView]);
+    }
+
+    const day = all.filter(r => String(r.date || '') === resView.date)
+        .sort((a, b) => String(a.time || '').localeCompare(String(b.time || '')));
+    const reserved = [], titles = {};
+    day.forEach(r => resTables(r).forEach(t => {
+        reserved.push(t);
+        titles[t] = (titles[t] ? titles[t] + ' | ' : '') + `${r.time || ''} Uhr · ${r.name || ''} (${r.guests || 1} Pers.)`;
+    }));
+    const withTable = day.filter(r => resTables(r).length);
+    const noTable = day.length - withTable.length;
+    const svg = window.FloorPlan && FloorPlan.staticSvg
+        ? FloorPlan.staticSvg(reserved, { highlight: resView.highlight, titles, height: 500 }) : '';
+
+    const options = dates.map(d => {
+        const c = all.filter(r => String(r.date || '') === d).length;
+        return `<option value="${escHtml(d)}"${d === resView.date ? ' selected' : ''}>${escHtml(d ? fmtDate(d) : 'Ohne Datum')} · ${c} ${c === 1 ? 'Reservierung' : 'Reservierungen'}</option>`;
+    }).join('');
+
+    const occupancy = withTable.length
+        ? withTable.map(r => `<button type="button" class="rs-occ${resView.activeId === String(r.id) ? ' active' : ''}" data-id="${escHtml(String(r.id))}" onclick="showResOnMap(this.dataset.id)">
+              <b>${escHtml(resTables(r).join(', '))}</b><span>${escHtml(r.time || '')} Uhr · ${escHtml(r.name || '')}</span></button>`).join('')
+        : '<p class="rs-muted">An diesem Tag sind keine Tische gewählt.</p>';
+
+    box.innerHTML = `
+        <section class="rs-board">
+            <div class="rs-map">${svg}</div>
+            <div class="rs-side">
+                <div>
+                    <label class="field-label" for="resDateSelect">Tag</label>
+                    <select id="resDateSelect" onchange="setResDate(this.value)">${options}</select>
+                </div>
+                <div class="rs-stats">
+                    <div><strong>${day.length}</strong><span>${day.length === 1 ? 'Reservierung' : 'Reservierungen'}</span></div>
+                    <div><strong>${reserved.length}</strong><span>${reserved.length === 1 ? 'Platz/Tisch belegt' : 'Plätze/Tische belegt'}</span></div>
+                </div>
+                <div class="rs-occ-list">
+                    <span class="field-label">Belegung</span>
+                    ${occupancy}
+                    ${noTable ? `<p class="rs-muted">${noTable} ${noTable === 1 ? 'Reservierung' : 'Reservierungen'} ohne Tischwahl (automatische Zuweisung).</p>` : ''}
+                </div>
+                <div class="rs-legend"><span><i class="red"></i>Reserviert</span><span><i class="gold"></i>Ausgewählt</span><span><i class="free"></i>Frei</span></div>
+            </div>
+        </section>
+        <div class="rs-list">${day.map(r => {
+            const tables = resTables(r);
+            const active = resView.activeId === String(r.id);
+            return `
+            <article class="rs-card${active ? ' active' : ''}">
+                <div class="rs-card-main">
+                    <strong>${escHtml(r.name || 'Unbekannter Gast')} · ${escHtml(r.guests || 1)} Personen</strong>
+                    <div class="rs-details">
+                        <div>🕒 <b>Uhrzeit:</b> ${escHtml(r.time || 'Nicht angegeben')} Uhr</div>
+                        <div>📍 <b>Bereich:</b> ${escHtml(r.type || 'Nicht angegeben')}</div>
+                        <div>📞 <b>Telefon:</b> ${r.phone ? `<code>${escHtml(r.phone)}</code>` : '<span class="rs-warn">Nicht angegeben</span>'}</div>
+                        <div>📝 <b>Anmerkungen:</b> ${r.notes ? escHtml(r.notes) : 'Keine Anmerkungen'}</div>
+                        <div>🪑 <b>Tisch:</b> ${tables.length ? escHtml(tables.join(', ')) : 'Automatische Platzzuweisung / kein Tisch ausgewählt'}</div>
+                    </div>
+                </div>
+                <div class="rs-card-actions">
+                    <span class="rs-status">${escHtml(r.status || 'Bestätigt')}</span>
+                    ${tables.length ? `<button type="button" class="btn-nav-outline" data-id="${escHtml(String(r.id))}" onclick="showResOnMap(this.dataset.id)">${active ? 'Markierung aus' : 'Im Plan zeigen'}</button>` : ''}
+                    <button type="button" class="btn-red" data-id="${escHtml(String(r.id))}" onclick="deleteReservation(this.dataset.id)">Löschen</button>
+                </div>
+            </article>`;
+        }).join('')}</div>`;
+}
+
+function setResDate(d) {
+    resView.date = d; resView.highlight = []; resView.activeId = null;
+    renderStaffReservations();
+}
+
+function showResOnMap(id) {
+    const r = (appState.reservations || []).find(x => String(x.id) === String(id));
+    if (!r) return;
+    if (resView.activeId === String(id)) { resView.activeId = null; resView.highlight = []; }
+    else { resView.activeId = String(id); resView.highlight = resTables(r); }
+    renderStaffReservations();
+    if (resView.activeId) { const m = document.querySelector('.rs-board'); if (m) m.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
 }
 
 function renderAllViews() {
@@ -710,35 +808,7 @@ function renderAllViews() {
 
     renderPosTicket();
 
-    const reservations = Array.isArray(appState.reservations) ? appState.reservations : [];
-    document.getElementById('staffResList').innerHTML =
-        reservations.length === 0
-            ? '<p style="color:#888;">Keine offenen Reservierungen.</p>'
-            : reservations.map(r => {
-                const tables = Array.isArray(r.tables) ? r.tables
-                    : (typeof r.tables === 'string' ? r.tables.split(',').map(x => x.trim()).filter(Boolean) : []);
-                return `
-                <article class="list-item-card" style="margin-top:12px;padding:16px;display:block;">
-                    <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;">
-                        <div style="min-width:220px;flex:1;">
-                            <strong style="font-size:16px;">${escHtml(r.name || 'Unbekannter Gast')} · ${escHtml(r.guests || 1)} Personen</strong>
-                            <div style="font-size:13px;color:#ddd;margin-top:7px;line-height:1.8;">
-                                <div>📅 <strong>Datum:</strong> ${escHtml(r.date ? fmtDate(r.date) : 'Nicht angegeben')}</div>
-                                <div>🕒 <strong>Uhrzeit:</strong> ${escHtml(r.time || 'Nicht angegeben')} Uhr</div>
-                                <div>📍 <strong>Bereich:</strong> ${escHtml(r.type || 'Nicht angegeben')}</div>
-                                <div>📞 <strong>Telefonnummer:</strong> ${r.phone ? `<code>${escHtml(r.phone)}</code>` : '<span style="color:#ffbd75;">Nicht angegeben</span>'}</div>
-                                <div>📝 <strong>Anmerkungen:</strong> ${r.notes ? escHtml(r.notes) : 'Keine Anmerkungen'}</div>
-                                <div>🪑 <strong>Reservierter Tisch:</strong> ${tables.length ? escHtml(tables.join(', ')) : 'Automatische Platzzuweisung / kein Tisch ausgewählt'}</div>
-                            </div>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:10px;">
-                            <span style="color:var(--green-live);font-size:12px;">${escHtml(r.status || 'Bestätigt')}</span>
-                            <button type="button" class="btn-red" style="padding:6px 12px;font-size:12px;" onclick="deleteReservation('${escHtml(String(r.id))}')">Löschen</button>
-                        </div>
-                    </div>
-                    ${reservationTableMap(tables)}
-                </article>`;
-            }).join('');
+    renderStaffReservations();
 }
 
 // =====================================================
@@ -1189,23 +1259,66 @@ function editDish(id) {
 function renderNewsJobsAdmin() {
     const open = !!(appState.status && appState.status.applicationsOpen);
     const t = document.getElementById('applyStateText');
-    if (t) t.innerHTML = 'Aktuell: <strong>' + (open ? 'OFFEN' : 'GESCHLOSSEN') + '</strong>';
+    if (t) { t.textContent = open ? 'Offen' : 'Geschlossen'; t.className = 'nj-pill ' + (open ? 'open' : 'closed'); }
+    const tb = document.getElementById('applyToggleBtn');
+    if (tb) tb.textContent = open ? 'Bewerbungen schließen' : 'Bewerbungen öffnen';
     const nl = document.getElementById('adminNewsList'), jl = document.getElementById('adminJobsList');
     const news = (appState.news || []), jobs = (appState.jobs || []);
+    const iconBtns = (editFn, delFn, id) => `<div class="nj-item-actions">
+            <button type="button" class="nj-icon" title="Bearbeiten" aria-label="Bearbeiten" onclick="${editFn}('${escHtml(String(id))}')">✏️</button>
+            <button type="button" class="nj-icon danger" title="Löschen" aria-label="Löschen" onclick="${delFn}('${escHtml(String(id))}')">🗑️</button></div>`;
     if (nl && nl.dataset.sig !== JSON.stringify(news)) {
         nl.dataset.sig = JSON.stringify(news);
-        nl.innerHTML = news.length ? news.map(n => `<div class="admin-row" style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);">
-            <div><strong>${n.pinned ? '📌 ' : ''}${escHtml(n.title)}</strong></div>
-            <div style="display:flex;gap:6px;"><button type="button" class="btn-nav-outline" style="padding:6px 10px;font-size:11px;" onclick="editNews('${n.id}')">✏️</button>
-            <button type="button" class="btn-nav-outline" style="padding:6px 10px;font-size:11px;" onclick="deleteNews('${n.id}')">🗑️</button></div></div>`).join('') : '<p>Keine News.</p>';
+        nl.innerHTML = news.length ? news.map(n => `<article class="nj-item">
+            <div class="nj-item-main">
+                <div class="nj-item-title">${n.pinned ? '<span class="nj-badge pin">📌 Angepinnt</span>' : ''}<strong>${escHtml(n.title)}</strong></div>
+                ${n.text ? `<p class="nj-item-text">${escHtml(n.text)}</p>` : ''}
+            </div>${iconBtns('editNews', 'deleteNews', n.id)}</article>`).join('')
+            : '<p class="nj-empty">Noch keine News veröffentlicht.</p>';
     }
     if (jl && jl.dataset.sig !== JSON.stringify(jobs)) {
         jl.dataset.sig = JSON.stringify(jobs);
-        jl.innerHTML = jobs.length ? jobs.map(j => `<div class="admin-row" style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);">
-            <div><strong>${escHtml(j.title)}</strong> <small>${escHtml(j.type || '')}</small></div>
-            <div style="display:flex;gap:6px;"><button type="button" class="btn-nav-outline" style="padding:6px 10px;font-size:11px;" onclick="editJob('${j.id}')">✏️</button>
-            <button type="button" class="btn-nav-outline" style="padding:6px 10px;font-size:11px;" onclick="deleteJob('${j.id}')">🗑️</button></div></div>`).join('') : '<p>Keine Stellen.</p>';
+        jl.innerHTML = jobs.length ? jobs.map(j => `<article class="nj-item">
+            <div class="nj-item-main">
+                <div class="nj-item-title"><strong>${escHtml(j.title)}</strong>${j.type ? `<span class="nj-badge">${escHtml(j.type)}</span>` : ''}</div>
+                ${j.description ? `<p class="nj-item-text">${escHtml(j.description)}</p>` : ''}
+            </div>${iconBtns('editJob', 'deleteJob', j.id)}</article>`).join('')
+            : '<p class="nj-empty">Keine Stellen ausgeschrieben.</p>';
     }
+    updateNjCounts();
+}
+
+function updateNjCounts() {
+    document.querySelectorAll('.nj-count[data-for]').forEach(c => {
+        const el = document.getElementById(c.dataset.for);
+        if (el) c.textContent = el.value.length + ' / ' + el.maxLength;
+    });
+}
+document.addEventListener('input', e => {
+    if (e.target && e.target.closest && e.target.closest('.nj-form')) updateNjCounts();
+});
+
+function setNjEditing(kind, on) {
+    const cancel = document.getElementById(kind + 'CancelBtn');
+    if (cancel) cancel.style.display = on ? '' : 'none';
+    const form = document.getElementById(kind + 'Form');
+    if (form) form.classList.toggle('is-editing', on);
+    const save = document.getElementById(kind + 'SaveBtn');
+    if (save) save.textContent = on ? 'Änderungen speichern' : (kind === 'news' ? 'Veröffentlichen' : 'Speichern');
+    updateNjCounts();
+}
+
+function resetNewsForm() {
+    ['editNewsId', 'newsTitleInput', 'newsTextInput'].forEach(i => document.getElementById(i).value = '');
+    document.getElementById('newsPinnedInput').checked = false;
+    document.getElementById('newsFormHeading').textContent = 'News verfassen';
+    setNjEditing('news', false);
+}
+
+function resetJobForm() {
+    ['editJobId', 'jobTitleInput', 'jobTypeInput', 'jobDescInput', 'jobReqInput'].forEach(i => document.getElementById(i).value = '');
+    document.getElementById('jobFormHeading').textContent = 'Stelle ausschreiben';
+    setNjEditing('job', false);
 }
 
 const _json = { 'Content-Type': 'application/json' };
@@ -1225,9 +1338,7 @@ async function saveNews() {
     if (!title) return showToast('Titel angeben');
     const body = { title, text: document.getElementById('newsTextInput').value.trim(), pinned: document.getElementById('newsPinnedInput').checked };
     await fetch(id ? `/api/news/${id}` : '/api/news/add', { method: id ? 'PUT' : 'POST', headers: _json, body: JSON.stringify(body) });
-    ['editNewsId', 'newsTitleInput', 'newsTextInput'].forEach(i => document.getElementById(i).value = '');
-    document.getElementById('newsPinnedInput').checked = false;
-    document.getElementById('newsFormHeading').textContent = 'News verfassen';
+    resetNewsForm();
     await fetchState();
     showToast('✅ Gespeichert');
 }
@@ -1240,6 +1351,8 @@ function editNews(id) {
     document.getElementById('newsTextInput').value = n.text || '';
     document.getElementById('newsPinnedInput').checked = !!n.pinned;
     document.getElementById('newsFormHeading').textContent = 'News bearbeiten';
+    setNjEditing('news', true);
+    document.getElementById('newsForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 async function deleteNews(id) {
@@ -1257,8 +1370,7 @@ async function saveJob() {
     const body = { title, type: document.getElementById('jobTypeInput').value.trim(),
         description: document.getElementById('jobDescInput').value.trim(), requirements: document.getElementById('jobReqInput').value.trim() };
     await fetch(id ? `/api/jobs/${id}` : '/api/jobs/add', { method: id ? 'PUT' : 'POST', headers: _json, body: JSON.stringify(body) });
-    ['editJobId', 'jobTitleInput', 'jobTypeInput', 'jobDescInput', 'jobReqInput'].forEach(i => document.getElementById(i).value = '');
-    document.getElementById('jobFormHeading').textContent = 'Stelle ausschreiben';
+    resetJobForm();
     await fetchState();
     showToast('✅ Gespeichert');
 }
@@ -1272,6 +1384,8 @@ function editJob(id) {
     document.getElementById('jobDescInput').value = j.description || '';
     document.getElementById('jobReqInput').value = j.requirements || '';
     document.getElementById('jobFormHeading').textContent = 'Stelle bearbeiten';
+    setNjEditing('job', true);
+    document.getElementById('jobForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 async function deleteJob(id) {

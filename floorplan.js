@@ -149,21 +149,29 @@
     '.fp-static .fp-id{fill:#f1e9da;font:700 11px sans-serif}' +
     '.fp-static .fp-bid{font-size:8px}' +
     '.fp-static .fp-seats{fill:#c9b9ad;font:9px sans-serif}' +
-    '.fp-static .fp-sel .fp-top{fill:#d8392c;stroke:#ffd2cc;stroke-width:2.5}';
+    '.fp-static .fp-sel .fp-top{fill:#d8392c;stroke:#ffd2cc;stroke-width:2.5}' +
+    '.fp-static .fp-hl .fp-top{fill:#f0b866;stroke:#fff;stroke-width:3}' +
+    '.fp-static .fp-hl .fp-id,.fp-static .fp-hl .fp-seats{fill:#1a1410}';
 
-  function staticSvg(selected) {
+  // selected: reservierte Tische (rot). opts.highlight: hervorgehobene Tische (gold),
+  // opts.titles: { tischId: 'Tooltip-Text' }, opts.height: Höhe in px (Standard 300)
+  function staticSvg(selected, opts) {
+    opts = opts || {};
     var sel = {}; (selected || []).forEach(function (id) { sel[String(id).trim()] = true; });
+    var hl = {}; (opts.highlight || []).forEach(function (id) { hl[String(id).trim()] = true; });
+    var titles = opts.titles || {};
     var s = document.createElementNS(NS, 'svg');
     s.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
     s.setAttribute('class', 'fp-static');
     s.setAttribute('role', 'img');
     s.setAttribute('aria-label', 'Raumplan mit markierten reservierten Tischen');
-    s.setAttribute('style', 'display:block;height:300px;width:auto;max-width:100%;margin:0 auto');
+    s.setAttribute('style', 'display:block;height:' + (opts.height || 300) + 'px;width:auto;max-width:100%;margin:0 auto');
     el('style', {}, s).textContent = STATIC_CSS;
     drawStatic(s);
     TABLES.forEach(function (tb) {
       var g = drawTable(s, tb, false);
-      g.setAttribute('class', 'fp-table' + (sel[tb.id] ? ' fp-sel' : ''));
+      g.setAttribute('class', 'fp-table' + (sel[tb.id] ? ' fp-sel' : '') + (hl[tb.id] ? ' fp-hl' : ''));
+      if (titles[tb.id]) el('title', {}, g).textContent = tb.name + ': ' + titles[tb.id];
     });
     return s.outerHTML;
   }
