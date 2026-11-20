@@ -380,11 +380,3 @@ input, select { width: 100%; background: #0a0a0c; border: 1px solid var(--panel-
 .rs-card-actions .btn-nav-outline { color: var(--text-main); background: transparent; border: 1px solid rgba(241, 233, 218, .22); }
 .rs-empty { color: #888; }
 @media (max-width: 900px) { .rs-board, .nj-cols { grid-template-columns: 1fr; } }
-
-/* ---------- Mengenwahl (+ / −) ---------- */
-.dish-actions { display: flex; align-items: center; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
-.dish-actions .btn-red { flex: 1; min-width: 150px; }
-.qty-stepper { display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(255,255,255,.25); border-radius: 999px; padding: 3px; background: rgba(255,255,255,.03); }
-.qty-btn { width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(241,233,218,.08); color: var(--washi, #fff); font-size: 18px; line-height: 1; cursor: pointer; transition: background .2s; }
-.qty-btn:hover { background: var(--lacquer, #c82333); color: #fff; }
-.qty-val { min-width: 26px; text-align: center; font-weight: 700; font-size: 14px; }

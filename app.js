@@ -20,12 +20,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     await fetchAppState();
-
-    if (currentCustomer) {
-        await refreshCurrentCustomer();
-        notifyVipStatus();
-        setInterval(refreshCurrentCustomer, 5 * 60 * 1000);
-    }
     setInterval(fetchAppState, 5000);
 });
 
@@ -115,7 +109,41 @@ function renderFrontend() {
     renderMenu();
     renderTeam();
     renderNewsAndJobs();
+    renderVipTiers();
     updateCartCount();
+}
+
+function renderVipTiers() {
+    const grid = document.getElementById('vipGrid');
+    if (!grid || !appState || !Array.isArray(appState.vipTiers)) return;
+    const tiers = appState.vipTiers;
+    const sig = JSON.stringify(tiers);
+    if (grid.dataset.sig === sig) return;
+    grid.dataset.sig = sig;
+
+    if (!tiers.length) {
+        grid.innerHTML = '<p style="color:#888;">Aktuell sind keine VIP-Stufen verfügbar.</p>';
+        return;
+    }
+
+    grid.innerHTML = tiers.map(t => {
+        const style = ['silver', 'gold', 'black'].includes(t.style) ? t.style : 'silver';
+        const btnClass = style === 'silver' ? 'btn-white' : 'btn-red';
+        const btnStyle = style === 'black'
+            ? ' style="background: var(--washi); color: var(--ink); border-color: var(--washi);"'
+            : '';
+        const short = String(t.name || '').split(' ')[0];
+        return `
+            <div class="vip-card ${style}">
+                <div>
+                    ${t.label ? `<span class="vip-tier-label">${escHtml(t.label)}</span>` : ''}
+                    <h3>${escHtml(t.name)}</h3>
+                    ${t.price ? `<div class="vip-price">${escHtml(t.price)}</div>` : ''}
+                    <ul class="vip-features">${(t.perks || []).map(x => `<li>${escHtml(x)}</li>`).join('')}</ul>
+                </div>
+                <button type="button" class="${btnClass} full-width"${btnStyle} data-tier="${escHtml(t.name)}" onclick="openVipApplyModal(this.dataset.tier)">${escHtml(short)} Mitglied werden</button>
+            </div>`;
+    }).join('');
 }
 
 function renderMenu() {
@@ -153,27 +181,11 @@ function renderMenu() {
                 </div>
                 <p class="dish-desc">${d.desc || ''}</p>
             </div>
-            <div class="dish-actions">
-                <div class="qty-stepper" role="group" aria-label="Menge ${d.name}">
-                    <button type="button" class="qty-btn" aria-label="Weniger" onclick="changeMenuQty(${d.id}, -1)">−</button>
-                    <span class="qty-val" id="menuQty-${d.id}">${menuQty[d.id] || 1}</span>
-                    <button type="button" class="qty-btn" aria-label="Mehr" onclick="changeMenuQty(${d.id}, 1)">+</button>
-                </div>
-                <button type="button" class="btn-red" onclick="addToCart(${d.id})">
-                    In den Warenkorb
-                </button>
-            </div>
+            <button type="button" class="btn-red full-width" onclick="addToCart(${d.id})">
+                In den Warenkorb
+            </button>
         </div>
     `).join('');
-}
-
-const menuQty = {};
-
-function changeMenuQty(id, delta) {
-    const q = Math.max(1, Math.min(99, (menuQty[id] || 1) + delta));
-    menuQty[id] = q;
-    const el = document.getElementById('menuQty-' + id);
-    if (el) el.textContent = q;
 }
 
 function selectMenuCategory(cat) {
@@ -213,21 +225,16 @@ function addToCart(id) {
 
     if (!item) return;
 
-    const amount = menuQty[id] || 1;
     const existing = cart.find(c => c.id === id);
 
     if (existing) {
-        existing.qty = Math.min(99, existing.qty + amount);
+        existing.qty++;
     } else {
-        cart.push({ ...item, qty: amount });
+        cart.push({ ...item, qty: 1 });
     }
 
-    menuQty[id] = 1;
-    const qtyEl = document.getElementById('menuQty-' + id);
-    if (qtyEl) qtyEl.textContent = 1;
-
     updateCartCount();
-    showToast(`✅ ${amount}x ${item.name} zum Warenkorb hinzugefügt`);
+    showToast(`✅ ${item.name} zum Warenkorb hinzugefügt`);
 }
 
 function updateCartCount() {
@@ -258,13 +265,8 @@ function openCartModal() {
                     <div>
                         <strong>${i.name}</strong><br>
                         <span style="color:#aaa; font-size:12px;">
-                            ${i.price.toFixed(2)} € / Stück
+                            ${i.qty}x ${i.price.toFixed(2)} €
                         </span>
-                    </div>
-                    <div class="qty-stepper" role="group" aria-label="Menge ${i.name}">
-                        <button type="button" class="qty-btn" aria-label="Weniger" onclick="changeCartQty(${i.id}, -1)">−</button>
-                        <span class="qty-val">${i.qty}</span>
-                        <button type="button" class="qty-btn" aria-label="Mehr" onclick="changeCartQty(${i.id}, 1)">+</button>
                     </div>
                     <div style="display:flex; align-items:center; gap:10px;">
                         <strong>${(i.price * i.qty).toFixed(2)} €</strong>
@@ -304,16 +306,6 @@ function openCartModal() {
     if (nameEl && !nameEl.value && currentCustomer && currentCustomer.username) nameEl.value = currentCustomer.username;
 
     modal.classList.add('open');
-}
-
-function changeCartQty(id, delta) {
-    const item = cart.find(i => i.id === id);
-    if (!item) return;
-    item.qty += delta;
-    if (item.qty <= 0) return removeFromCart(id);
-    item.qty = Math.min(99, item.qty);
-    updateCartCount();
-    openCartModal();
 }
 
 function removeFromCart(id) {
@@ -359,8 +351,8 @@ async function checkoutOrder() {
     };
 
     if (!delivery.name) return showToast('Bitte deinen Namen angeben');
-    if (!/^\d{1,10}$/.test(delivery.zip)) return showToast('Bitte eine gültige PLZ angeben');
-    if (delivery.phone.replace(/\D/g, '').length < 1) return showToast('Bitte eine Telefonnummer angeben');
+    if (!/^\d{4,6}$/.test(delivery.zip)) return showToast('Bitte eine gültige PLZ angeben');
+    if (delivery.phone.replace(/\D/g, '').length < 5) return showToast('Bitte eine Telefonnummer angeben');
 
     const res = await fetch('/api/orders', {
         method: 'POST',
@@ -579,74 +571,6 @@ async function submitVipApplication(event) {
     }
 }
 
-// VIP-Laufzeit: Anzeige und Erinnerung
-const VIP_WARN_DAYS = 7;
-
-function vipDaysLeft(c) {
-    if (!c || !c.vipUntil || !c.vipStatus || c.vipStatus === 'Kein') return null;
-    return Math.ceil((Number(c.vipUntil) - Date.now()) / 86400000);
-}
-
-function renderVipInfo() {
-    const row = document.getElementById('profileVipUntilRow');
-    const span = document.getElementById('profileVipUntil');
-    const note = document.getElementById('profileVipNotice');
-    if (!row || !note || !currentCustomer) return;
-    const days = vipDaysLeft(currentCustomer);
-    row.style.display = days === null ? 'none' : '';
-    if (days !== null) span.textContent = new Date(Number(currentCustomer.vipUntil)).toLocaleDateString('de-DE');
-    let msg = '';
-    if (days !== null && days <= VIP_WARN_DAYS) {
-        msg = days <= 1 ? '⏳ Dein VIP läuft heute oder morgen ab.' : `⏳ Dein VIP läuft in ${days} Tagen ab.`;
-        msg += ' Beantrage rechtzeitig eine Verlängerung im VIP Club.';
-    } else if (currentCustomer.vipExpiredTier) {
-        msg = `Dein ${currentCustomer.vipExpiredTier} ist abgelaufen. Im VIP Club kannst du ihn neu beantragen.`;
-    }
-    note.textContent = msg;
-    note.style.display = msg ? '' : 'none';
-}
-
-function notifyVipStatus() {
-    if (!currentCustomer) return;
-    const days = vipDaysLeft(currentCustomer);
-    let msg = '';
-    let key = '';
-    if (days !== null && days <= VIP_WARN_DAYS) {
-        msg = `⏳ Dein ${currentCustomer.vipStatus} läuft in ${Math.max(days, 0)} Tag(en) ab. Beantrage rechtzeitig eine Verlängerung.`;
-        key = 'warn' + currentCustomer.vipUntil;
-    } else if (currentCustomer.vipExpiredTier) {
-        msg = `Dein ${currentCustomer.vipExpiredTier} ist abgelaufen.`;
-        key = 'exp' + currentCustomer.vipExpiredTier;
-    }
-    if (!msg) return;
-    try {
-        if (sessionStorage.getItem('soulSushiVipNote') === key) return;
-        sessionStorage.setItem('soulSushiVipNote', key);
-    } catch (e) { /* ignorieren */ }
-    showToast(msg);
-}
-
-// Kundenkonto neu laden (VIP kann inzwischen abgelaufen oder verlängert sein)
-async function refreshCurrentCustomer() {
-    let pw = '';
-    try { pw = sessionStorage.getItem('soulSushiPw') || ''; } catch (e) { /* ignorieren */ }
-    if (!currentCustomer || !pw) return;
-    try {
-        const res = await fetch('/api/customer/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: currentCustomer.username, password: pw })
-        });
-        const data = await res.json();
-        if (res.ok && data.customer) {
-            currentCustomer = data.customer;
-            sessionStorage.setItem('soulSushiCustomer', JSON.stringify(currentCustomer));
-            updateCustomerNavUI();
-            renderVipInfo();
-        }
-    } catch (e) { /* offline: alten Stand behalten */ }
-}
-
 // Kunden-Auth & Profil
 
 function openCustomerAuthModal() {
@@ -673,10 +597,7 @@ function openCustomerAuthModal() {
         document.getElementById('profileDiscount').textContent =
             `${currentCustomer.discount || 0} %`;
 
-        renderVipInfo();
-
         document.getElementById('customerProfileModal').classList.add('open');
-        refreshCurrentCustomer();
 
         loadMyAppointments();
 
@@ -753,7 +674,6 @@ async function handleCustomerAuth(event) {
         updateCustomerNavUI();
 
         showToast(`🎉 Willkommen, ${currentCustomer.username}!`);
-        setTimeout(notifyVipStatus, 3000);
 
     } catch (err) {
         const errEl = document.getElementById('authErrorMsg');
@@ -833,15 +753,6 @@ function customerPw() {
 
 function escHtml(v) {
     return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-
-function applyForJob(title) {
-    openAppointmentModal();
-    const modal = document.getElementById('appointmentModal');
-    const concern = document.getElementById('apptConcern');
-    if (modal && modal.classList.contains('open') && concern) {
-        concern.value = `Bewerbung: ${title}`;
-    }
 }
 
 function openAppointmentModal(event) {
@@ -984,7 +895,9 @@ function renderNewsAndJobs() {
             ${j.description ? `<p>${escHtml(j.description).replace(/\n/g, '<br>')}</p>` : ''}
             ${j.requirements ? `<h4>Voraussetzungen</h4><p>${escHtml(j.requirements).replace(/\n/g, '<br>')}</p>` : ''}
             ${open
-                ? `<button type="button" class="btn-red" data-job="${escHtml(j.title)}" onclick="applyForJob(this.dataset.job)">Jetzt bewerben</button>`
+                ? (/^https?:\/\//.test(invite)
+                    ? `<a class="btn-red" href="${escHtml(invite)}" target="_blank" rel="noopener">Jetzt bewerben</a>`
+                    : '<span class="job-hint">Bewirb dich direkt im Spiel beim Team.</span>')
                 : '<span class="job-hint">Bewerbung aktuell nicht möglich</span>'}
         </article>`).join('') : '<p class="job-hint">Derzeit sind keine Stellen ausgeschrieben.</p>';
     }

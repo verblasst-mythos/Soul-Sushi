@@ -426,7 +426,7 @@ function renderDiscountsView(force) {
     box.innerHTML = names.length ? names.map(g => `<div class="admin-card" style="margin-bottom:16px;"><h4>${escHtml(g)}</h4>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px 24px;margin-top:8px;">
         ${groups[g].map(d => `<div style="display:flex;gap:10px;align-items:baseline;"><strong style="min-width:64px;color:var(--lantern,#f0b866);">${escHtml(d.code)}</strong><span>${escHtml(d.name)}</span></div>`).join('')}
-        </div></div>`).join('') : '<p class="muted-small">' + (q ? 'Keine Codes gefunden.' : 'Noch keine Rabattcodes eingetragen. Die Führungsebene kann sie in der Verwaltung anlegen.') + '</p>';
+        </div></div>`).join('') : '<p class="muted-small">Keine Codes gefunden.</p>';
 }
 
 function renderDiscountsAdmin() {
@@ -452,8 +452,7 @@ async function saveDiscount() {
     const code = document.getElementById('discountCodeInput').value.trim();
     if (!code) return showToast('Code angeben');
     const body = { code, name: document.getElementById('discountNameInput').value.trim(), group: document.getElementById('discountGroupInput').value.trim() };
-    const res = await fetch(id ? `/api/discounts/${id}` : '/api/discounts/add', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    if (!res.ok) return showDiscountError(res);
+    await fetch(id ? `/api/discounts/${id}` : '/api/discounts/add', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     resetDiscountForm();
     await fetchState();
     showToast('✅ Gespeichert');
@@ -471,17 +470,9 @@ function editDiscount(id) {
 
 async function deleteDiscount(id) {
     if (!await showActionConfirm('Code löschen', 'Diesen Rabattcode wirklich löschen?', 'Löschen')) return;
-    const res = await fetch(`/api/discounts/${id}`, { method: 'DELETE' });
-    if (!res.ok) return showDiscountError(res);
+    await fetch(`/api/discounts/${id}`, { method: 'DELETE' });
     await fetchState();
     showToast('🗑️ Gelöscht');
-}
-
-async function showDiscountError(res) {
-    let msg = '';
-    try { msg = (await res.json()).error || ''; } catch (e) { /* ignorieren */ }
-    if (/Unbekannte Aktion/i.test(msg)) msg = 'Datenbank-Update fehlt: supabase_update_termine.sql im SQL Editor ausführen.';
-    showToast('❌ ' + (msg || 'Konnte nicht gespeichert werden'));
 }
 
 function renderAllViews() {
@@ -582,15 +573,12 @@ function renderAllViews() {
                     <div class="list-item-card" style="display:flex; justify-content:space-between; align-items:center; gap:15px; margin-bottom:10px; ${c.hasHausverbot ? 'border-color: #c82333; background: rgba(200,35,51,0.05);' : ''}">
                         <div>
                             <strong>${c.username}</strong>
-                            <div style="font-size:12px; color:#aaa; margin-top:3px;">Rabatt: ${c.discount || 0}%${c.vipUntil && c.vipStatus !== 'Kein' ? ' · VIP bis ' + new Date(Number(c.vipUntil)).toLocaleDateString('de-DE') : ''}</div>
+                            <div style="font-size:12px; color:#aaa; margin-top:3px;">Rabatt: ${c.discount || 0}%</div>
                         </div>
 
                         <div style="display:flex; gap:15px; align-items:center;">
                             <select onchange="updateCustomerStatus('${c.id}', this.value, ${c.isStammkunde}, ${c.hasHausverbot})" style="background:#1f1f1f; color:#fff; border:1px solid rgba(255,255,255,0.2); padding:6px; border-radius:4px;">
-                                <option value="Kein" ${c.vipStatus === 'Kein' ? 'selected' : ''}>Kein VIP</option>
-                                <option value="Silver VIP" ${c.vipStatus === 'Silver VIP' ? 'selected' : ''}>Silver VIP (5%)</option>
-                                <option value="Gold VIP" ${c.vipStatus === 'Gold VIP' ? 'selected' : ''}>Gold VIP (10%)</option>
-                                <option value="Black VIP" ${c.vipStatus === 'Black VIP' ? 'selected' : ''}>Black VIP (15%)</option>
+                                ${vipTierOptions(c.vipStatus)}
                             </select>
 
                             <label style="font-size:12px; display:flex; align-items:center; gap:5px; cursor:pointer;">
@@ -644,6 +632,7 @@ function renderAllViews() {
         renderAppointments();
         renderNewsJobsAdmin();
         renderDiscountsAdmin();
+        renderVipTiersAdmin();
 
         document.getElementById('accountsManageList').innerHTML =
             appState.staff.map(s => {
@@ -814,7 +803,7 @@ function renderAllViews() {
             ? vipCustomers.map(c => `
                 <div class="list-item-card">
                     <strong>${c.username}</strong>
-                    <span>${c.vipStatus}${c.vipUntil ? ' · bis ' + new Date(Number(c.vipUntil)).toLocaleDateString('de-DE') : ''}</span>
+                    <span>${c.vipStatus}</span>
                 </div>
             `).join('')
             : '<p style="color:#888;">Aktuell sind keine VIP-Kunden eingetragen.</p>';
@@ -1046,6 +1035,100 @@ function orderDeliveryHtml(o) {
         <div>📞 <code>${escHtml(dl.phone || '')}</code></div>
         ${dl.notes ? `<div>📝 ${escHtml(dl.notes)}</div>` : ''}
     </div>`;
+}
+
+function defaultVipTiers() {
+    return [
+        { id: 't1', name: 'Silver VIP', discount: 5 },
+        { id: 't2', name: 'Gold VIP', discount: 10 },
+        { id: 't3', name: 'Black VIP', discount: 15 }
+    ];
+}
+
+function vipTierOptions(current) {
+    const tiers = Array.isArray(appState.vipTiers) ? appState.vipTiers : defaultVipTiers();
+    let html = `<option value="Kein" ${(!current || current === 'Kein') ? 'selected' : ''}>Kein VIP</option>`;
+    tiers.forEach(t => {
+        html += `<option value="${escHtml(t.name)}" ${current === t.name ? 'selected' : ''}>${escHtml(t.name)} (${Number(t.discount) || 0}%)</option>`;
+    });
+    return html;
+}
+
+function renderVipTiersAdmin() {
+    const box = document.getElementById('adminVipTiersList');
+    if (!box) return;
+    const list = Array.isArray(appState.vipTiers) ? appState.vipTiers : [];
+    const sig = JSON.stringify(list);
+    if (box.dataset.sig === sig) return;
+    box.dataset.sig = sig;
+    box.innerHTML = list.length ? list.map(t => `<div style="padding:10px 0;border-bottom:1px solid var(--line);">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+            <div>
+                <strong>${escHtml(t.name)}</strong> <small>${t.label ? '(' + escHtml(t.label) + ')' : ''}</small><br>
+                <small>${escHtml(t.price || 'ohne Preis')} · ${Number(t.discount) || 0} % Rabatt · Farbe: ${escHtml(t.style || 'silver')}</small>
+            </div>
+            <div style="display:flex;gap:6px;">
+                <button type="button" class="btn-nav-outline" style="padding:6px 10px;font-size:11px;" onclick="editVipTier('${escHtml(t.id)}')">✏️</button>
+                <button type="button" class="btn-nav-outline" style="padding:6px 10px;font-size:11px;" onclick="deleteVipTier('${escHtml(t.id)}')">🗑️</button>
+            </div>
+        </div>
+        <ul style="margin:6px 0 0 18px;font-size:12px;color:#aaa;">${(t.perks || []).map(x => `<li>${escHtml(x)}</li>`).join('')}</ul>
+    </div>`).join('') : '<p>Keine VIP-Stufen.</p>';
+}
+
+function resetVipTierForm() {
+    ['editVipTierId', 'vipTierNameInput', 'vipTierLabelInput', 'vipTierPriceInput', 'vipTierPerksInput'].forEach(i => document.getElementById(i).value = '');
+    document.getElementById('vipTierDiscountInput').value = '0';
+    document.getElementById('vipTierStyleInput').value = 'silver';
+    document.getElementById('vipTierFormHeading').textContent = 'VIP-Stufe hinzufügen';
+}
+
+async function saveVipTier() {
+    if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
+    const id = document.getElementById('editVipTierId').value;
+    const name = document.getElementById('vipTierNameInput').value.trim();
+    if (!name) return showToast('Bitte einen Namen angeben');
+    const body = {
+        name,
+        label: document.getElementById('vipTierLabelInput').value.trim(),
+        price: document.getElementById('vipTierPriceInput').value.trim(),
+        discount: String(parseInt(document.getElementById('vipTierDiscountInput').value, 10) || 0),
+        style: document.getElementById('vipTierStyleInput').value,
+        perks: document.getElementById('vipTierPerksInput').value
+    };
+    const res = await fetch(id ? `/api/vip-tiers/${id}` : '/api/vip-tiers/add', {
+        method: id ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+        let msg = 'Konnte nicht gespeichert werden';
+        try { msg = (await res.json()).error || msg; } catch (e) {}
+        return showToast('❌ ' + msg);
+    }
+    resetVipTierForm();
+    await fetchState();
+    showToast('✅ Gespeichert');
+}
+
+function editVipTier(id) {
+    const t = (appState.vipTiers || []).find(x => x.id === id);
+    if (!t) return;
+    document.getElementById('editVipTierId').value = t.id;
+    document.getElementById('vipTierNameInput').value = t.name || '';
+    document.getElementById('vipTierLabelInput').value = t.label || '';
+    document.getElementById('vipTierPriceInput').value = t.price || '';
+    document.getElementById('vipTierDiscountInput').value = Number(t.discount) || 0;
+    document.getElementById('vipTierStyleInput').value = t.style || 'silver';
+    document.getElementById('vipTierPerksInput').value = (t.perks || []).join('\n');
+    document.getElementById('vipTierFormHeading').textContent = 'VIP-Stufe bearbeiten';
+}
+
+async function deleteVipTier(id) {
+    if (!await showActionConfirm('VIP-Stufe löschen', 'Alle Kunden dieser Stufe verlieren ihren VIP-Status. Wirklich löschen?', 'Löschen')) return;
+    await fetch(`/api/vip-tiers/${id}`, { method: 'DELETE' });
+    await fetchState();
+    showToast('🗑️ Gelöscht');
 }
 
 function escHtml(v) {
@@ -1589,16 +1672,6 @@ function setPosQty(id, value) {
     renderPosTicket();
 }
 
-function changePosQty(id, delta) {
-    const item = posCart.find(i => String(i.id) === String(id));
-
-    if (!item) return;
-
-    if (item.qty + delta < 1) return removePosItem(id);
-
-    setPosQty(id, item.qty + delta);
-}
-
 function removePosItem(id) {
     posCart = posCart.filter(item => String(item.id) !== String(id));
 
@@ -1621,11 +1694,10 @@ function renderPosTicket() {
                         </small>
                     </span>
 
-                    <div class="qty-stepper" role="group" aria-label="Anzahl ${i.name}">
-                        <button type="button" class="qty-btn" aria-label="Weniger" onclick="changePosQty('${i.id}', -1)">−</button>
-                        <input aria-label="Anzahl ${i.name}" type="number" min="1" max="999" value="${i.qty}" onchange="setPosQty('${i.id}', this.value)" style="width:52px;padding:6px;text-align:center;background:#181818;color:#fff;border:1px solid #555;border-radius:6px;">
-                        <button type="button" class="qty-btn" aria-label="Mehr" onclick="changePosQty('${i.id}', 1)">+</button>
-                    </div>
+                    <label style="display:flex;align-items:center;gap:6px;">
+                        Anzahl
+                        <input aria-label="Anzahl ${i.name}" type="number" min="1" max="999" value="${i.qty}" onchange="setPosQty('${i.id}', this.value)" style="width:64px;padding:7px;background:#181818;color:#fff;border:1px solid #555;border-radius:6px;">
+                    </label>
 
                     <strong style="min-width:75px;text-align:right;">
                         ${(i.price * i.qty).toFixed(2).replace('.', ',')} €
