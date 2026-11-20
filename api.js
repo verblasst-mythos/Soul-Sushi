@@ -87,9 +87,6 @@
   route('POST', '/api/discounts/add', async b => staff('discount_add', () => b)());
   route('PUT', '/api/discounts/:id', async (b, [id]) => staff('discount_update', () => Object.assign({}, b, { id }))());
   route('DELETE', '/api/discounts/:id', async (b, [id]) => staff('discount_delete', () => ({ id }))());
-  route('POST', '/api/vip-tiers/add', async b => staff('vip_tier_add', () => b)());
-  route('PUT', '/api/vip-tiers/:id', async (b, [id]) => staff('vip_tier_update', () => Object.assign({}, b, { id }))());
-  route('DELETE', '/api/vip-tiers/:id', async (b, [id]) => staff('vip_tier_delete', () => ({ id }))());
   route('POST', '/api/news/add', async b => staff('news_add', () => b)());
   route('PUT', '/api/news/:id', async (b, [id]) => staff('news_update', () => Object.assign({}, b, { id }))());
   route('DELETE', '/api/news/:id', async (b, [id]) => staff('news_delete', () => ({ id }))());

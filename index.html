@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SOUL SUSHI — Japanese Kitchen</title>
+    <meta name="description" content="Soul Sushi Japanese Kitchen – Speisekarte, Tischreservierung, VIP Club und Jobs.">
+    <meta name="theme-color" content="#07080d">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%27 height=%27100%27 rx=%2722%27 fill=%27%23c82333%27/%3E%3Ctext x=%2750%27 y=%2770%27 font-size=%2765%27 text-anchor=%27middle%27 fill=%27%23f1e9da%27%3E魂%3C/text%3E%3C/svg%3E">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
@@ -85,13 +88,13 @@
             <div class="section-header">
                 <h2>Soul Sushi VIP Club</h2>
             </div>
-            <div class="vip-grid" id="vipGrid">
+            <div class="vip-grid">
                 <div class="vip-card silver">
                     <div>
                         <span class="vip-tier-label">Stufe 1</span>
                         <h3>Silver VIP</h3>
-                        <div class="vip-price">45.000 €</div>
-                        <ul class="vip-features"><li>5 % Rabatt auf alle Speisen</li><li>Kostenloses Getränk pro Besuch</li></ul>
+                        <div class="vip-price">65.000 €</div>
+                        <ul class="vip-features"><li>Gültig für 2 Monate</li><li>5 % Rabatt auf alle Speisen</li><li>Kostenloses Getränk pro Besuch</li></ul>
                     </div>
                     <button type="button" class="btn-white full-width" onclick="openVipApplyModal('Silver VIP')">Silver Mitglied werden</button>
                 </div>
@@ -99,8 +102,8 @@
                     <div>
                         <span class="vip-tier-label">Stufe 2</span>
                         <h3>Gold VIP</h3>
-                        <div class="vip-price">75.000 €</div>
-                        <ul class="vip-features"><li>10 % Rabatt auf alle Speisen</li><li>Kostenloses Getränk und Dessert pro Besuch</li></ul>
+                        <div class="vip-price">95.000 €</div>
+                        <ul class="vip-features"><li>Gültig für 2 Monate</li><li>10 % Rabatt auf alle Speisen</li><li>Kostenloses Getränk und Dessert pro Besuch</li></ul>
                     </div>
                     <button type="button" class="btn-red full-width" onclick="openVipApplyModal('Gold VIP')">Gold Mitglied werden</button>
                 </div>
@@ -108,8 +111,8 @@
                     <div>
                         <span class="vip-tier-label">Höchste Stufe</span>
                         <h3>Black VIP</h3>
-                        <div class="vip-price">125.000 €</div>
-                        <ul class="vip-features"><li>15 % Rabatt auf alle Speisen</li><li>Kostenloses VIP-Menü einmal pro Woche</li><li>Bevorzugte Bedienung</li><li>Exklusive Einladung zu VIP-Events</li></ul>
+                        <div class="vip-price">150.000 €</div>
+                        <ul class="vip-features"><li>Gültig für 2 Monate</li><li>15 % Rabatt auf alle Speisen</li><li>Kostenloses VIP-Menü einmal pro Woche</li><li>Bevorzugte Bedienung</li><li>Exklusive Einladung zu VIP-Events</li></ul>
                     </div>
                     <button type="button" class="btn-red full-width" style="background: var(--washi); color: var(--ink); border-color: var(--washi);" onclick="openVipApplyModal('Black VIP')">Black Mitglied werden</button>
                 </div>
@@ -172,7 +175,9 @@
                 <p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Kundenstatus:</strong> <span id="profileVipBadge" style="color: var(--lantern);">Kein VIP</span></p>
                 <p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Stammkunden-Status:</strong> <span id="profileStammBadge">Nein</span></p>
                 <p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Hausverbot:</strong> <span id="profileHausverbotBadge" style="color: var(--matcha);">Nein</span></p>
-                <p style="margin: 0; font-size: 14px;"><strong>Dein Rabatt:</strong> <span id="profileDiscount" style="color: var(--matcha);">0 %</span></p>
+                <p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Dein Rabatt:</strong> <span id="profileDiscount" style="color: var(--matcha);">0 %</span></p>
+                <p id="profileVipUntilRow" style="margin: 0; font-size: 14px; display:none;"><strong>VIP gültig bis:</strong> <span id="profileVipUntil"></span></p>
+                <p id="profileVipNotice" style="margin: 12px 0 0; font-size: 13px; display:none; padding: 10px 12px; border-radius: 3px; border: 1px solid var(--lantern); color: var(--lantern);"></p>
             </div>
             <div style="margin-bottom: 20px;">
                 <p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Deine Termine</strong></p>

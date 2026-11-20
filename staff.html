@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SOUL SUSHI — Mitarbeiter & Verwaltung</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%27 height=%27100%27 rx=%2722%27 fill=%27%23c82333%27/%3E%3Ctext x=%2750%27 y=%2770%27 font-size=%2765%27 text-anchor=%27middle%27 fill=%27%23f1e9da%27%3E魂%3C/text%3E%3C/svg%3E">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
@@ -104,7 +106,6 @@
                     <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-accounts', this)">👤 Mitarbeiter-Konten</button>
                     <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-roles', this)">🎖️ Rollen</button>
                     <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-discounts', this)">🏷️ Rabattcodes</button>
-                    <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-viptiers', this)">💎 VIP-Stufen</button>
                     <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-newsjobs', this)">📰 News & Jobs</button>
                     <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-menu', this)">🍣 Speisekarte</button>
                     <button type="button" class="admin-subtab" onclick="switchAdminSub('sub-shop', this)">⚙️ Shop & Discord</button>
@@ -176,36 +177,6 @@
                             <button type="button" class="btn-white full-width" style="margin-top:8px;" onclick="resetDiscountForm()">Neu / Abbrechen</button>
                         </div>
                         <div class="admin-card"><h4>Alle Codes</h4><div id="adminDiscountsList" class="admin-scroll-list"></div></div>
-                    </div>
-                </div>
-
-                <!-- UNTERTAB: VIP-STUFEN -->
-                <div id="sub-viptiers" class="admin-subpanel">
-                    <div class="admin-two-col">
-                        <div class="admin-card">
-                            <h4 id="vipTierFormHeading">VIP-Stufe hinzufügen</h4>
-                            <input type="hidden" id="editVipTierId">
-                            <label class="field-label">NAME</label>
-                            <input type="text" id="vipTierNameInput" placeholder="z. B. Gold VIP" maxlength="40">
-                            <label class="field-label">BESCHRIFTUNG (OPTIONAL)</label>
-                            <input type="text" id="vipTierLabelInput" placeholder="z. B. Stufe 2" maxlength="30">
-                            <label class="field-label">PREIS</label>
-                            <input type="text" id="vipTierPriceInput" placeholder="z. B. 75.000 €" maxlength="30">
-                            <label class="field-label">RABATT IN %</label>
-                            <input type="number" id="vipTierDiscountInput" min="0" max="100" value="0">
-                            <label class="field-label">FARBE DER KARTE</label>
-                            <select id="vipTierStyleInput">
-                                <option value="silver">Silber</option>
-                                <option value="gold">Gold</option>
-                                <option value="black">Schwarz / Rot</option>
-                            </select>
-                            <label class="field-label">VORTEILE (EINE ZEILE PRO VORTEIL)</label>
-                            <textarea id="vipTierPerksInput" rows="5" placeholder="10 % Rabatt auf alle Speisen&#10;Kostenloses Getränk pro Besuch"></textarea>
-                            <button type="button" class="btn-red full-width" onclick="saveVipTier()">SPEICHERN</button>
-                            <button type="button" class="btn-white full-width" style="margin-top:8px;" onclick="resetVipTierForm()">Neu / Abbrechen</button>
-                            <p class="muted-small" style="margin-top:10px;">Ändern sich Name oder Rabatt einer Stufe, gilt das sofort für alle Kunden dieser Stufe. Wird eine Stufe gelöscht, verlieren ihre Kunden den VIP-Status.</p>
-                        </div>
-                        <div class="admin-card"><h4>Alle Stufen</h4><div id="adminVipTiersList" class="admin-scroll-list"></div></div>
                     </div>
                 </div>
 

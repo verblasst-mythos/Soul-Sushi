@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     populateLoginDropdown();
-    setInterval(fetchState, 5000);
+    setInterval(() => { if (!document.hidden) fetchState(); }, 5000);
 
     const savedUserId = sessionStorage.getItem('soulSushiUserId');
 
@@ -112,7 +112,7 @@ function populateLoginDropdown() {
     if (!datalist) return;
 
     datalist.innerHTML = appState.staff
-        .map(s => `<option value="${s.name}">`)
+        .map(s => `<option value="${escHtml(s.name)}">`)
         .join('');
 }
 
@@ -516,7 +516,7 @@ function renderAllViews() {
                 <div class="staff-card">
                     <div>
                         <span style="font-size:10px; font-weight:700; color:${getRoleColor(s.role)}; text-transform:uppercase; letter-spacing:1.5px;">${s.role}</span>
-                        <strong style="display:block; font-size:16px; margin-top:2px;">${s.name}</strong>
+                        <strong style="display:block; font-size:16px; margin-top:2px;">${escHtml(s.name)}</strong>
                         <span style="font-size:12px; color:#aaa; display:block; margin-top:4px;">
                             ${s.onDuty ? `🟢 Im Dienst seit ${s.clockIn} Uhr` : '🔴 Ausgestempelt'}
                         </span>
@@ -531,7 +531,7 @@ function renderAllViews() {
         const newAccRoleSel = document.getElementById('newAccRole');
 
         const roleOptions = appState.roles
-            .map(r => `<option value="${r.name}">${r.name}</option>`)
+            .map(r => `<option value="${escHtml(r.name)}">${escHtml(r.name)}</option>`)
             .join('');
 
         if (photoRoleSel) {
@@ -550,12 +550,12 @@ function renderAllViews() {
             appState.staff.map(s => `
                 <div class="team-member-card">
                     <div class="team-avatar-wrap">
-                        <img src="${s.avatar}" alt="${s.name}">
+                        <img src="${escHtml(s.avatar)}" alt="${escHtml(s.name)}">
                         <span class="team-duty-pill">${s.onDuty ? '🟢 IM DIENST' : '⚫ FREI'}</span>
                     </div>
                     <div class="team-member-info">
                         <span class="team-role-tag" style="background:${getRoleColor(s.role)};">${s.role}</span>
-                        <h4>${s.name}</h4>
+                        <h4>${escHtml(s.name)}</h4>
                         <button type="button" class="btn-white full-width" style="margin-top:12px; padding:10px;" onclick="selectStaffForPhoto('${s.id}')">
                             BILD / RANG BEARBEITEN
                         </button>
@@ -572,13 +572,16 @@ function renderAllViews() {
                 : appState.customers.map(c => `
                     <div class="list-item-card" style="display:flex; justify-content:space-between; align-items:center; gap:15px; margin-bottom:10px; ${c.hasHausverbot ? 'border-color: #c82333; background: rgba(200,35,51,0.05);' : ''}">
                         <div>
-                            <strong>${c.username}</strong>
-                            <div style="font-size:12px; color:#aaa; margin-top:3px;">Rabatt: ${c.discount || 0}%</div>
+                            <strong>${escHtml(c.username)}</strong>
+                            <div style="font-size:12px; color:#aaa; margin-top:3px;">Rabatt: ${c.discount || 0}%${c.vipUntil && c.vipStatus !== 'Kein' ? ' · VIP bis ' + new Date(Number(c.vipUntil)).toLocaleDateString('de-DE') : ''}</div>
                         </div>
 
                         <div style="display:flex; gap:15px; align-items:center;">
                             <select onchange="updateCustomerStatus('${c.id}', this.value, ${c.isStammkunde}, ${c.hasHausverbot})" style="background:#1f1f1f; color:#fff; border:1px solid rgba(255,255,255,0.2); padding:6px; border-radius:4px;">
-                                ${vipTierOptions(c.vipStatus)}
+                                <option value="Kein" ${c.vipStatus === 'Kein' ? 'selected' : ''}>Kein VIP</option>
+                                <option value="Silver VIP" ${c.vipStatus === 'Silver VIP' ? 'selected' : ''}>Silver VIP (5%)</option>
+                                <option value="Gold VIP" ${c.vipStatus === 'Gold VIP' ? 'selected' : ''}>Gold VIP (10%)</option>
+                                <option value="Black VIP" ${c.vipStatus === 'Black VIP' ? 'selected' : ''}>Black VIP (15%)</option>
                             </select>
 
                             <label style="font-size:12px; display:flex; align-items:center; gap:5px; cursor:pointer;">
@@ -612,10 +615,10 @@ function renderAllViews() {
                 : appState.vipApplications.map(app => `
                     <div class="list-item-card" style="display:flex; justify-content:space-between; align-items:center; gap:15px; margin-bottom:10px;">
                         <div>
-                            <strong>${app.username}</strong> beantragt
-                            <span style="color:var(--gold-role, #d4af37);">${app.tier}</span>
+                            <strong>${escHtml(app.username)}</strong> beantragt
+                            <span style="color:var(--gold-role, #d4af37);">${escHtml(app.tier)}</span>
                             <div style="font-size:12px; color:#aaa; margin-top:3px;">
-                                Handy: <code>${app.phone}</code> · Status: <strong>${app.status}</strong>
+                                Handy: <code>${escHtml(app.phone)}</code> · Status: <strong>${escHtml(app.status)}</strong>
                             </div>
                         </div>
 
@@ -632,7 +635,6 @@ function renderAllViews() {
         renderAppointments();
         renderNewsJobsAdmin();
         renderDiscountsAdmin();
-        renderVipTiersAdmin();
 
         document.getElementById('accountsManageList').innerHTML =
             appState.staff.map(s => {
@@ -642,8 +644,8 @@ function renderAllViews() {
                     <div class="list-item-card" style="flex-direction:column; align-items:flex-start; gap:10px;">
                         <div style="width:100%; display:flex; justify-content:space-between; align-items:center;">
                             <div>
-                                <strong>${s.name}</strong>
-                                <span style="color:${getRoleColor(s.role)}; font-size:11px; font-weight:700;">[${s.role}]</span>
+                                <strong>${escHtml(s.name)}</strong>
+                                <span style="color:${getRoleColor(s.role)}; font-size:11px; font-weight:700;">[${escHtml(s.role)}]</span>
                                 <div style="font-size:12px; color:#888; margin-top:2px;">
                                     PIN: <code>••••</code>
                                     <span style="font-size:11px;">(verschlüsselt)</span>
@@ -671,7 +673,7 @@ function renderAllViews() {
                 <div class="list-item-card">
                     <div>
                         <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${r.color}; margin-right:8px;"></span>
-                        <strong>${r.name}</strong>
+                        <strong>${escHtml(r.name)}</strong>
                         <div style="font-size:11px; color:#aaa;">
                             ${r.isManagement ? '🛡️ Führungsebene' : '👤 Standard'}
                         </div>
@@ -686,7 +688,7 @@ function renderAllViews() {
             const uniqueCats = [...new Set(appState.menu.map(m => m.category))];
 
             catSuggestions.innerHTML = uniqueCats
-                .map(c => `<option value="${c}">`)
+                .map(c => `<option value="${escHtml(c)}">`)
                 .join('');
         }
 
@@ -694,9 +696,9 @@ function renderAllViews() {
             appState.menu.map(m => `
                 <div class="list-item-card">
                     <div>
-                        <span style="font-size:10px; color:var(--accent-red); font-weight:700;">REITER: ${m.category}</span>
-                        <strong style="display:block;">${m.name} — ${m.price.toFixed(2).replace('.', ',')} €</strong>
-                        <span style="font-size:11px; color:#888;">${m.desc}</span>
+                        <span style="font-size:10px; color:var(--accent-red); font-weight:700;">REITER: ${escHtml(m.category)}</span>
+                        <strong style="display:block;">${escHtml(m.name)} — ${m.price.toFixed(2).replace('.', ',')} €</strong>
+                        <span style="font-size:11px; color:#888;">${escHtml(m.desc)}</span>
                     </div>
 
                     <div style="display:flex; gap:6px;">
@@ -772,8 +774,8 @@ function renderAllViews() {
         clockGrid.innerHTML = appState.staff.map(s => `
             <div class="staff-card">
                 <div>
-                    <span style="font-size:10px;font-weight:700;color:${getRoleColor(s.role)};text-transform:uppercase;">${s.role}</span>
-                    <strong style="display:block;font-size:16px;margin-top:2px;">${s.name}</strong>
+                    <span style="font-size:10px;font-weight:700;color:${getRoleColor(s.role)};text-transform:uppercase;">${escHtml(s.role)}</span>
+                    <strong style="display:block;font-size:16px;margin-top:2px;">${escHtml(s.name)}</strong>
                     <span style="font-size:12px;color:#aaa;">
                         ${s.onDuty ? `🟢 Im Dienst seit ${s.clockIn} Uhr` : '⚫ Nicht im Dienst'}
                     </span>
@@ -802,8 +804,8 @@ function renderAllViews() {
         vipReadOnly.innerHTML = vipCustomers.length
             ? vipCustomers.map(c => `
                 <div class="list-item-card">
-                    <strong>${c.username}</strong>
-                    <span>${c.vipStatus}</span>
+                    <strong>${escHtml(c.username)}</strong>
+                    <span>${escHtml(c.vipStatus)}${c.vipUntil ? ' · bis ' + new Date(Number(c.vipUntil)).toLocaleDateString('de-DE') : ''}</span>
                 </div>
             `).join('')
             : '<p style="color:#888;">Aktuell sind keine VIP-Kunden eingetragen.</p>';
@@ -818,7 +820,7 @@ function renderAllViews() {
             : activeOrders.map(o => `
                 <div class="order-ticket ${o.status === 'Fertig' ? 'done' : ''}">
                     <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                        <strong>#${o.id} · ${o.table}</strong>
+                        <strong>#${o.id} · ${escHtml(o.table)}</strong>
                         <span style="font-size:12px; color:#aaa;">${o.time} Uhr</span>
                     </div>
 
@@ -846,7 +848,7 @@ function renderAllViews() {
             ? archivedOrders.map(o => `
                 <div class="order-ticket done">
                     <div style="display:flex;justify-content:space-between;">
-                        <strong>#${o.id} · ${o.table}</strong>
+                        <strong>#${o.id} · ${escHtml(o.table)}</strong>
                         <span>${o.time || ''} Uhr</span>
                     </div>
 
@@ -868,7 +870,7 @@ function renderAllViews() {
     document.getElementById('posMenuGrid').innerHTML =
         appState.menu.map(item => `
             <button type="button" class="pos-btn" onclick="addToPos('${item.id}')">
-                <div style="font-weight:600; font-size:13px;">${item.name}</div>
+                <div style="font-weight:600; font-size:13px;">${escHtml(item.name)}</div>
                 <div style="color:var(--accent-red); font-size:12px; margin-top:4px;">
                     ${item.price.toFixed(2).replace('.', ',')} €
                 </div>
@@ -1035,100 +1037,6 @@ function orderDeliveryHtml(o) {
         <div>📞 <code>${escHtml(dl.phone || '')}</code></div>
         ${dl.notes ? `<div>📝 ${escHtml(dl.notes)}</div>` : ''}
     </div>`;
-}
-
-function defaultVipTiers() {
-    return [
-        { id: 't1', name: 'Silver VIP', discount: 5 },
-        { id: 't2', name: 'Gold VIP', discount: 10 },
-        { id: 't3', name: 'Black VIP', discount: 15 }
-    ];
-}
-
-function vipTierOptions(current) {
-    const tiers = Array.isArray(appState.vipTiers) ? appState.vipTiers : defaultVipTiers();
-    let html = `<option value="Kein" ${(!current || current === 'Kein') ? 'selected' : ''}>Kein VIP</option>`;
-    tiers.forEach(t => {
-        html += `<option value="${escHtml(t.name)}" ${current === t.name ? 'selected' : ''}>${escHtml(t.name)} (${Number(t.discount) || 0}%)</option>`;
-    });
-    return html;
-}
-
-function renderVipTiersAdmin() {
-    const box = document.getElementById('adminVipTiersList');
-    if (!box) return;
-    const list = Array.isArray(appState.vipTiers) ? appState.vipTiers : [];
-    const sig = JSON.stringify(list);
-    if (box.dataset.sig === sig) return;
-    box.dataset.sig = sig;
-    box.innerHTML = list.length ? list.map(t => `<div style="padding:10px 0;border-bottom:1px solid var(--line);">
-        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
-            <div>
-                <strong>${escHtml(t.name)}</strong> <small>${t.label ? '(' + escHtml(t.label) + ')' : ''}</small><br>
-                <small>${escHtml(t.price || 'ohne Preis')} · ${Number(t.discount) || 0} % Rabatt · Farbe: ${escHtml(t.style || 'silver')}</small>
-            </div>
-            <div style="display:flex;gap:6px;">
-                <button type="button" class="btn-nav-outline" style="padding:6px 10px;font-size:11px;" onclick="editVipTier('${escHtml(t.id)}')">✏️</button>
-                <button type="button" class="btn-nav-outline" style="padding:6px 10px;font-size:11px;" onclick="deleteVipTier('${escHtml(t.id)}')">🗑️</button>
-            </div>
-        </div>
-        <ul style="margin:6px 0 0 18px;font-size:12px;color:#aaa;">${(t.perks || []).map(x => `<li>${escHtml(x)}</li>`).join('')}</ul>
-    </div>`).join('') : '<p>Keine VIP-Stufen.</p>';
-}
-
-function resetVipTierForm() {
-    ['editVipTierId', 'vipTierNameInput', 'vipTierLabelInput', 'vipTierPriceInput', 'vipTierPerksInput'].forEach(i => document.getElementById(i).value = '');
-    document.getElementById('vipTierDiscountInput').value = '0';
-    document.getElementById('vipTierStyleInput').value = 'silver';
-    document.getElementById('vipTierFormHeading').textContent = 'VIP-Stufe hinzufügen';
-}
-
-async function saveVipTier() {
-    if (!isManagementUser(currentUser)) return showToast('❌ Nur Führungsebene');
-    const id = document.getElementById('editVipTierId').value;
-    const name = document.getElementById('vipTierNameInput').value.trim();
-    if (!name) return showToast('Bitte einen Namen angeben');
-    const body = {
-        name,
-        label: document.getElementById('vipTierLabelInput').value.trim(),
-        price: document.getElementById('vipTierPriceInput').value.trim(),
-        discount: String(parseInt(document.getElementById('vipTierDiscountInput').value, 10) || 0),
-        style: document.getElementById('vipTierStyleInput').value,
-        perks: document.getElementById('vipTierPerksInput').value
-    };
-    const res = await fetch(id ? `/api/vip-tiers/${id}` : '/api/vip-tiers/add', {
-        method: id ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-    });
-    if (!res.ok) {
-        let msg = 'Konnte nicht gespeichert werden';
-        try { msg = (await res.json()).error || msg; } catch (e) {}
-        return showToast('❌ ' + msg);
-    }
-    resetVipTierForm();
-    await fetchState();
-    showToast('✅ Gespeichert');
-}
-
-function editVipTier(id) {
-    const t = (appState.vipTiers || []).find(x => x.id === id);
-    if (!t) return;
-    document.getElementById('editVipTierId').value = t.id;
-    document.getElementById('vipTierNameInput').value = t.name || '';
-    document.getElementById('vipTierLabelInput').value = t.label || '';
-    document.getElementById('vipTierPriceInput').value = t.price || '';
-    document.getElementById('vipTierDiscountInput').value = Number(t.discount) || 0;
-    document.getElementById('vipTierStyleInput').value = t.style || 'silver';
-    document.getElementById('vipTierPerksInput').value = (t.perks || []).join('\n');
-    document.getElementById('vipTierFormHeading').textContent = 'VIP-Stufe bearbeiten';
-}
-
-async function deleteVipTier(id) {
-    if (!await showActionConfirm('VIP-Stufe löschen', 'Alle Kunden dieser Stufe verlieren ihren VIP-Status. Wirklich löschen?', 'Löschen')) return;
-    await fetch(`/api/vip-tiers/${id}`, { method: 'DELETE' });
-    await fetchState();
-    showToast('🗑️ Gelöscht');
 }
 
 function escHtml(v) {
@@ -1672,6 +1580,16 @@ function setPosQty(id, value) {
     renderPosTicket();
 }
 
+function changePosQty(id, delta) {
+    const item = posCart.find(i => String(i.id) === String(id));
+
+    if (!item) return;
+
+    if (item.qty + delta < 1) return removePosItem(id);
+
+    setPosQty(id, item.qty + delta);
+}
+
 function removePosItem(id) {
     posCart = posCart.filter(item => String(item.id) !== String(id));
 
@@ -1688,16 +1606,17 @@ function renderPosTicket() {
             return `
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:13px; margin:8px 0;">
                     <span style="flex:1;">
-                        ${i.name}
+                        ${escHtml(i.name)}
                         <small style="display:block;color:#999;">
                             ${Number(i.price).toFixed(2).replace('.', ',')} € / Stück
                         </small>
                     </span>
 
-                    <label style="display:flex;align-items:center;gap:6px;">
-                        Anzahl
-                        <input aria-label="Anzahl ${i.name}" type="number" min="1" max="999" value="${i.qty}" onchange="setPosQty('${i.id}', this.value)" style="width:64px;padding:7px;background:#181818;color:#fff;border:1px solid #555;border-radius:6px;">
-                    </label>
+                    <div class="qty-stepper" role="group" aria-label="Anzahl ${escHtml(i.name)}">
+                        <button type="button" class="qty-btn" aria-label="Weniger" onclick="changePosQty('${i.id}', -1)">−</button>
+                        <input aria-label="Anzahl ${escHtml(i.name)}" type="number" min="1" max="999" value="${i.qty}" onchange="setPosQty('${i.id}', this.value)" style="width:52px;padding:6px;text-align:center;background:#181818;color:#fff;border:1px solid #555;border-radius:6px;">
+                        <button type="button" class="qty-btn" aria-label="Mehr" onclick="changePosQty('${i.id}', 1)">+</button>
+                    </div>
 
                     <strong style="min-width:75px;text-align:right;">
                         ${(i.price * i.qty).toFixed(2).replace('.', ',')} €
@@ -1705,7 +1624,7 @@ function renderPosTicket() {
 
                     <button
                         type="button"
-                        aria-label="${i.name} vom Bon entfernen"
+                        aria-label="${escHtml(i.name)} vom Bon entfernen"
                         title="Vom Bon entfernen"
                         onclick="removePosItem('${i.id}')"
                         style="border:1px solid #8b3434;background:#351b1b;color:#ffb4b4;border-radius:7px;padding:7px 10px;cursor:pointer;font-size:16px;line-height:1;">
@@ -1888,13 +1807,24 @@ async function saveWebhook() {
     }
 
     const discordWebhook =
-        document.getElementById('discordWebhookInput').value;
+        document.getElementById('discordWebhookInput').value.trim();
 
-    await fetch('/api/status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ discordWebhook })
-    });
+    if (discordWebhook && !/^https:\/\/([\w-]+\.)?(discord|discordapp)\.com\/api\/webhooks\/\d+\/[\w-]+$/i.test(discordWebhook) &&
+        !/^https:\/\/[\w.-]+\.workers\.dev\//i.test(discordWebhook)) {
+        return showToast('Bitte eine gültige Discord-Webhook-URL eingeben.');
+    }
+
+    try {
+        const res = await fetch('/api/status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ discordWebhook })
+        });
+        if (!res.ok) return showToast('Webhook konnte nicht gespeichert werden');
+    } catch (err) {
+        console.error(err);
+        return showToast('Datenbank nicht erreichbar');
+    }
 
     showToast('Webhook gespeichert');
 }
