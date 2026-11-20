@@ -426,7 +426,7 @@ function renderDiscountsView(force) {
     box.innerHTML = names.length ? names.map(g => `<div class="admin-card" style="margin-bottom:16px;"><h4>${escHtml(g)}</h4>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px 24px;margin-top:8px;">
         ${groups[g].map(d => `<div style="display:flex;gap:10px;align-items:baseline;"><strong style="min-width:64px;color:var(--lantern,#f0b866);">${escHtml(d.code)}</strong><span>${escHtml(d.name)}</span></div>`).join('')}
-        </div></div>`).join('') : '<p class="muted-small">Keine Codes gefunden.</p>';
+        </div></div>`).join('') : '<p class="muted-small">' + (q ? 'Keine Codes gefunden.' : 'Noch keine Rabattcodes eingetragen. Die Führungsebene kann sie in der Verwaltung anlegen.') + '</p>';
 }
 
 function renderDiscountsAdmin() {
@@ -452,7 +452,8 @@ async function saveDiscount() {
     const code = document.getElementById('discountCodeInput').value.trim();
     if (!code) return showToast('Code angeben');
     const body = { code, name: document.getElementById('discountNameInput').value.trim(), group: document.getElementById('discountGroupInput').value.trim() };
-    await fetch(id ? `/api/discounts/${id}` : '/api/discounts/add', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const res = await fetch(id ? `/api/discounts/${id}` : '/api/discounts/add', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!res.ok) return showDiscountError(res);
     resetDiscountForm();
     await fetchState();
     showToast('✅ Gespeichert');
@@ -470,9 +471,17 @@ function editDiscount(id) {
 
 async function deleteDiscount(id) {
     if (!await showActionConfirm('Code löschen', 'Diesen Rabattcode wirklich löschen?', 'Löschen')) return;
-    await fetch(`/api/discounts/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/discounts/${id}`, { method: 'DELETE' });
+    if (!res.ok) return showDiscountError(res);
     await fetchState();
     showToast('🗑️ Gelöscht');
+}
+
+async function showDiscountError(res) {
+    let msg = '';
+    try { msg = (await res.json()).error || ''; } catch (e) { /* ignorieren */ }
+    if (/Unbekannte Aktion/i.test(msg)) msg = 'Datenbank-Update fehlt: supabase_update_termine.sql im SQL Editor ausführen.';
+    showToast('❌ ' + (msg || 'Konnte nicht gespeichert werden'));
 }
 
 function renderAllViews() {
@@ -573,7 +582,7 @@ function renderAllViews() {
                     <div class="list-item-card" style="display:flex; justify-content:space-between; align-items:center; gap:15px; margin-bottom:10px; ${c.hasHausverbot ? 'border-color: #c82333; background: rgba(200,35,51,0.05);' : ''}">
                         <div>
                             <strong>${c.username}</strong>
-                            <div style="font-size:12px; color:#aaa; margin-top:3px;">Rabatt: ${c.discount || 0}%</div>
+                            <div style="font-size:12px; color:#aaa; margin-top:3px;">Rabatt: ${c.discount || 0}%${c.vipUntil && c.vipStatus !== 'Kein' ? ' · VIP bis ' + new Date(Number(c.vipUntil)).toLocaleDateString('de-DE') : ''}</div>
                         </div>
 
                         <div style="display:flex; gap:15px; align-items:center;">
@@ -805,7 +814,7 @@ function renderAllViews() {
             ? vipCustomers.map(c => `
                 <div class="list-item-card">
                     <strong>${c.username}</strong>
-                    <span>${c.vipStatus}</span>
+                    <span>${c.vipStatus}${c.vipUntil ? ' · bis ' + new Date(Number(c.vipUntil)).toLocaleDateString('de-DE') : ''}</span>
                 </div>
             `).join('')
             : '<p style="color:#888;">Aktuell sind keine VIP-Kunden eingetragen.</p>';

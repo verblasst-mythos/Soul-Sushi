@@ -20,6 +20,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     await fetchAppState();
+
+    if (currentCustomer) {
+        await refreshCurrentCustomer();
+        notifyVipStatus();
+        setInterval(refreshCurrentCustomer, 5 * 60 * 1000);
+    }
     setInterval(fetchAppState, 5000);
 });
 
@@ -573,6 +579,74 @@ async function submitVipApplication(event) {
     }
 }
 
+// VIP-Laufzeit: Anzeige und Erinnerung
+const VIP_WARN_DAYS = 7;
+
+function vipDaysLeft(c) {
+    if (!c || !c.vipUntil || !c.vipStatus || c.vipStatus === 'Kein') return null;
+    return Math.ceil((Number(c.vipUntil) - Date.now()) / 86400000);
+}
+
+function renderVipInfo() {
+    const row = document.getElementById('profileVipUntilRow');
+    const span = document.getElementById('profileVipUntil');
+    const note = document.getElementById('profileVipNotice');
+    if (!row || !note || !currentCustomer) return;
+    const days = vipDaysLeft(currentCustomer);
+    row.style.display = days === null ? 'none' : '';
+    if (days !== null) span.textContent = new Date(Number(currentCustomer.vipUntil)).toLocaleDateString('de-DE');
+    let msg = '';
+    if (days !== null && days <= VIP_WARN_DAYS) {
+        msg = days <= 1 ? '⏳ Dein VIP läuft heute oder morgen ab.' : `⏳ Dein VIP läuft in ${days} Tagen ab.`;
+        msg += ' Beantrage rechtzeitig eine Verlängerung im VIP Club.';
+    } else if (currentCustomer.vipExpiredTier) {
+        msg = `Dein ${currentCustomer.vipExpiredTier} ist abgelaufen. Im VIP Club kannst du ihn neu beantragen.`;
+    }
+    note.textContent = msg;
+    note.style.display = msg ? '' : 'none';
+}
+
+function notifyVipStatus() {
+    if (!currentCustomer) return;
+    const days = vipDaysLeft(currentCustomer);
+    let msg = '';
+    let key = '';
+    if (days !== null && days <= VIP_WARN_DAYS) {
+        msg = `⏳ Dein ${currentCustomer.vipStatus} läuft in ${Math.max(days, 0)} Tag(en) ab. Beantrage rechtzeitig eine Verlängerung.`;
+        key = 'warn' + currentCustomer.vipUntil;
+    } else if (currentCustomer.vipExpiredTier) {
+        msg = `Dein ${currentCustomer.vipExpiredTier} ist abgelaufen.`;
+        key = 'exp' + currentCustomer.vipExpiredTier;
+    }
+    if (!msg) return;
+    try {
+        if (sessionStorage.getItem('soulSushiVipNote') === key) return;
+        sessionStorage.setItem('soulSushiVipNote', key);
+    } catch (e) { /* ignorieren */ }
+    showToast(msg);
+}
+
+// Kundenkonto neu laden (VIP kann inzwischen abgelaufen oder verlängert sein)
+async function refreshCurrentCustomer() {
+    let pw = '';
+    try { pw = sessionStorage.getItem('soulSushiPw') || ''; } catch (e) { /* ignorieren */ }
+    if (!currentCustomer || !pw) return;
+    try {
+        const res = await fetch('/api/customer/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: currentCustomer.username, password: pw })
+        });
+        const data = await res.json();
+        if (res.ok && data.customer) {
+            currentCustomer = data.customer;
+            sessionStorage.setItem('soulSushiCustomer', JSON.stringify(currentCustomer));
+            updateCustomerNavUI();
+            renderVipInfo();
+        }
+    } catch (e) { /* offline: alten Stand behalten */ }
+}
+
 // Kunden-Auth & Profil
 
 function openCustomerAuthModal() {
@@ -599,7 +673,10 @@ function openCustomerAuthModal() {
         document.getElementById('profileDiscount').textContent =
             `${currentCustomer.discount || 0} %`;
 
+        renderVipInfo();
+
         document.getElementById('customerProfileModal').classList.add('open');
+        refreshCurrentCustomer();
 
         loadMyAppointments();
 
@@ -676,6 +753,7 @@ async function handleCustomerAuth(event) {
         updateCustomerNavUI();
 
         showToast(`🎉 Willkommen, ${currentCustomer.username}!`);
+        setTimeout(notifyVipStatus, 3000);
 
     } catch (err) {
         const errEl = document.getElementById('authErrorMsg');
@@ -755,6 +833,15 @@ function customerPw() {
 
 function escHtml(v) {
     return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function applyForJob(title) {
+    openAppointmentModal();
+    const modal = document.getElementById('appointmentModal');
+    const concern = document.getElementById('apptConcern');
+    if (modal && modal.classList.contains('open') && concern) {
+        concern.value = `Bewerbung: ${title}`;
+    }
 }
 
 function openAppointmentModal(event) {
@@ -897,9 +984,7 @@ function renderNewsAndJobs() {
             ${j.description ? `<p>${escHtml(j.description).replace(/\n/g, '<br>')}</p>` : ''}
             ${j.requirements ? `<h4>Voraussetzungen</h4><p>${escHtml(j.requirements).replace(/\n/g, '<br>')}</p>` : ''}
             ${open
-                ? (/^https?:\/\//.test(invite)
-                    ? `<a class="btn-red" href="${escHtml(invite)}" target="_blank" rel="noopener">Jetzt bewerben</a>`
-                    : '<span class="job-hint">Bewirb dich direkt im Spiel beim Team.</span>')
+                ? `<button type="button" class="btn-red" data-job="${escHtml(j.title)}" onclick="applyForJob(this.dataset.job)">Jetzt bewerben</button>`
                 : '<span class="job-hint">Bewerbung aktuell nicht möglich</span>'}
         </article>`).join('') : '<p class="job-hint">Derzeit sind keine Stellen ausgeschrieben.</p>';
     }

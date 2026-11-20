@@ -90,8 +90,8 @@
                     <div>
                         <span class="vip-tier-label">Stufe 1</span>
                         <h3>Silver VIP</h3>
-                        <div class="vip-price">45.000 €</div>
-                        <ul class="vip-features"><li>5 % Rabatt auf alle Speisen</li><li>Kostenloses Getränk pro Besuch</li></ul>
+                        <div class="vip-price">65.000 €</div>
+                        <ul class="vip-features"><li>Gültig für 2 Monate</li><li>5 % Rabatt auf alle Speisen</li><li>Kostenloses Getränk pro Besuch</li></ul>
                     </div>
                     <button type="button" class="btn-white full-width" onclick="openVipApplyModal('Silver VIP')">Silver Mitglied werden</button>
                 </div>
@@ -99,8 +99,8 @@
                     <div>
                         <span class="vip-tier-label">Stufe 2</span>
                         <h3>Gold VIP</h3>
-                        <div class="vip-price">75.000 €</div>
-                        <ul class="vip-features"><li>10 % Rabatt auf alle Speisen</li><li>Kostenloses Getränk und Dessert pro Besuch</li></ul>
+                        <div class="vip-price">95.000 €</div>
+                        <ul class="vip-features"><li>Gültig für 2 Monate</li><li>10 % Rabatt auf alle Speisen</li><li>Kostenloses Getränk und Dessert pro Besuch</li></ul>
                     </div>
                     <button type="button" class="btn-red full-width" onclick="openVipApplyModal('Gold VIP')">Gold Mitglied werden</button>
                 </div>
@@ -108,8 +108,8 @@
                     <div>
                         <span class="vip-tier-label">Höchste Stufe</span>
                         <h3>Black VIP</h3>
-                        <div class="vip-price">125.000 €</div>
-                        <ul class="vip-features"><li>15 % Rabatt auf alle Speisen</li><li>Kostenloses VIP-Menü einmal pro Woche</li><li>Bevorzugte Bedienung</li><li>Exklusive Einladung zu VIP-Events</li></ul>
+                        <div class="vip-price">150.000 €</div>
+                        <ul class="vip-features"><li>Gültig für 2 Monate</li><li>15 % Rabatt auf alle Speisen</li><li>Kostenloses VIP-Menü einmal pro Woche</li><li>Bevorzugte Bedienung</li><li>Exklusive Einladung zu VIP-Events</li></ul>
                     </div>
                     <button type="button" class="btn-red full-width" style="background: var(--washi); color: var(--ink); border-color: var(--washi);" onclick="openVipApplyModal('Black VIP')">Black Mitglied werden</button>
                 </div>
@@ -172,7 +172,9 @@
                 <p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Kundenstatus:</strong> <span id="profileVipBadge" style="color: var(--lantern);">Kein VIP</span></p>
                 <p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Stammkunden-Status:</strong> <span id="profileStammBadge">Nein</span></p>
                 <p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Hausverbot:</strong> <span id="profileHausverbotBadge" style="color: var(--matcha);">Nein</span></p>
-                <p style="margin: 0; font-size: 14px;"><strong>Dein Rabatt:</strong> <span id="profileDiscount" style="color: var(--matcha);">0 %</span></p>
+                <p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Dein Rabatt:</strong> <span id="profileDiscount" style="color: var(--matcha);">0 %</span></p>
+                <p id="profileVipUntilRow" style="margin: 0; font-size: 14px; display:none;"><strong>VIP gültig bis:</strong> <span id="profileVipUntil"></span></p>
+                <p id="profileVipNotice" style="margin: 12px 0 0; font-size: 13px; display:none; padding: 10px 12px; border-radius: 3px; border: 1px solid var(--lantern); color: var(--lantern);"></p>
             </div>
             <div style="margin-bottom: 20px;">
                 <p style="margin: 0 0 10px 0; font-size: 14px;"><strong>Deine Termine</strong></p>
